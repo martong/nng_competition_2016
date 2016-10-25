@@ -1,0 +1,17 @@
+
+.gitignore
+
+export HOME
+
+ifeq (@(COMPILER),)
+    CXX = clang++
+else
+    CXX = @(COMPILER)
+endif
+
+LD = $(CXX)
+
+COMPILE_TUP = $(TUP_CWD)/compile.tup
+LINK_TUP = $(TUP_CWD)/link.tup
+TEST_TUP = $(TUP_CWD)/test.tup
+

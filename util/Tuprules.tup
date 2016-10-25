@@ -1,0 +1,27 @@
+
+.gitignore
+
+CXX = clang++
+LD = $(CXX)
+
+export EXTRA_CPP_FLAGS
+export EXTRA_LD_FLAGS
+export BOOST_LIB
+
+CPP_FLAGS += -std=c++1y
+CPP_FLAGS += -Wall -Wextra -Wno-mismatched-tags
+CPP_FLAGS += -O0 -g
+CPP_FLAGS += -ftemplate-backtrace-limit=0
+CPP_FLAGS += $EXTRA_CPP_FLAGS
+CPP_FLAGS += -isystem $BOOST_LIB/../include
+
+LIBS += $BOOST_LIB/libboost_program_options.a
+LIBS += $BOOST_LIB/libboost_random.a
+LIBS += $BOOST_LIB/libboost_date_time.a
+LIBS += $BOOST_LIB/libboost_system.a
+
+LD_FLAGS += $EXTRA_LD_FLAGS
+
+!cxx = |> ^ CXX %f^ $(CXX) $(CPP_FLAGS) $(INCLUDE_DIRS) -c %f -o %o |> %B.o
+!linker = |> ^ LD %o^ $(LD) $(LD_FLAGS) %f $(LIBS) -o %o |>
+!unitTest = |> ^ UT %f^ ./%f && touch %o |> %b.output
