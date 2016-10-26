@@ -6,7 +6,7 @@ CPP_FLAGS += -std=c++14
 CPP_FLAGS += -Wall -Wextra -Wno-invalid-source-encoding -Wno-null-character
 #CPP_FLAGS += @(OPTIMALIZATION_FLAG)
 CPP_FLAGS += -ftemplate-backtrace-limit=0
-CPP_FLAGS += -O3 -g
+CPP_FLAGS += -O0 -g
 CPP_FLAGS += $EXTRA_CPP_FLAGS
 
 #INCLUDE_DIRS += -I$(SOURCE_DIR)

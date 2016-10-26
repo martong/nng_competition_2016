@@ -11,7 +11,7 @@ class Point {
 public:
     int x, y;
     Point():x(0), y(0) { }
-    explicit constexpr Point(int x, int y):x(x), y(y) {}
+    constexpr Point(int x, int y):x(x), y(y) {}
 
     constexpr Point(const Point&) = default;
     Point& operator=(const Point&) = default;
