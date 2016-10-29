@@ -1,0 +1,14 @@
+include_rules
+
+include $(COMPILE_TUP)
+
+: creep.cc |> !cxx |> creep.oo
+
+INCLUDE_DIRS += -I$(UTIL_DIR)
+
+: foreach *.cpp |> !cxx |>
+
+include $(LINK_TUP)
+
+: *.oo |> !linker |> demo
+: *.o $(UTIL_DIR)/*.o |> !linker |> creep

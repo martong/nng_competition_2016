@@ -16,6 +16,9 @@ int const energy_regeneration_q8=0.5*256; // 128
 // ilyen tempóban regenerálja az életét egy unit, 1/256 hp/s egységben
 int const health_regeneration_q8=0.25*256; // 64
 
+#define COLOR_ANSI
+#define FONT_ASCII
+
 // cellák rajzolásához
 // színek
 #if defined COLOR_ANSI
@@ -374,13 +377,19 @@ struct game
 			building const &b=*pb;
 			std::vector<pos> all;
 			std::vector<pos> wave;
+			std::cerr << t_q2 << " " << b.id << "(" << (b.br.x0+b.br.x1)/2 << ", " << (b.br.y0+b.br.y1)/2 << "): ";
 			if(creep_cells(all,b) && creep_spread_candidates(wave,all))
 			{
+				for (pos p : wave) {
+					std::cerr << "(" << p.x << ", " << p.y << ")";
+				}
 				uint k=(t_q2*t_q2+37)%wave.size();
+				std::cerr << k;
 				pos nc=wave[k];
 				map_creep[nc.y][nc.x]=1;
 				++creep_cover;
 			}
+			std::cerr << "\n";
 		}
 	}
 	bool anything_to_do() const
@@ -565,20 +574,6 @@ void step(game &g, bool turbo)
 {
 	g.tick();
 	std::cout << g;
-	double speed=
-#if defined SPEED
-		SPEED;
-#else
-		1;
-#endif
-	// 1e6: normál sebesség
-	int d=
-#if defined FAST_FWD
-		turbo?1e6/FAST_FWD:1e6/speed;
-#else
-		1e6/speed;
-#endif
-	usleep(d*dt_tick_q8/256);
 }
 
 int main(int argc, char **argv)

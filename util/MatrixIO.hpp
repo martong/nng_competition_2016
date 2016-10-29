@@ -4,6 +4,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm/max_element.hpp>
 
+#include <algorithm>
 #include <functional>
 #include <istream>
 #include <ostream>
@@ -17,6 +18,7 @@ void readValue(std::istream& s, T& t) {
     s >> t;
 }
 
+inline
 void readValue(std::istream& s, char& c) {
     s.get(c);
 }
@@ -31,10 +33,11 @@ std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix) {
 
 template<typename T>
 Matrix<T> loadMatrix(std::istream& is, const T& defaultValue = T{},
+        std::size_t width = 0, std::size_t height = 0, bool flip = false,
         char delimiter = '\n') {
     std::vector<std::string> lines;
     std::string line;
-    while (is.good()) {
+    while (is.good() && (height == 0 || lines.size() != height)) {
         std::getline(is, line, delimiter);
         std::cerr << "--> " << line << "\n";
         if (line.empty()) {
@@ -42,13 +45,18 @@ Matrix<T> loadMatrix(std::istream& is, const T& defaultValue = T{},
         }
         lines.push_back(line);
     }
+    if (flip) {
+        std::reverse(lines.begin(), lines.end());
+    }
 
-    std::size_t height = lines.size();
-    std::function<std::size_t(const std::string&)> sizeGetter =
-            [](const std::string& s) { return s.size(); };
-    std::size_t width = height != 0 ?
-            *boost::max_element(lines | boost::adaptors::transformed(
-                    sizeGetter)) : 0;
+    height = lines.size();
+    if (width == 0) {
+        std::function<std::size_t(const std::string&)> sizeGetter =
+                [](const std::string& s) { return s.size(); };
+        width = height != 0 ?
+                *boost::max_element(lines | boost::adaptors::transformed(
+                        sizeGetter)) : 0;
+    }
     std::cerr << width << ":" << height << "\n";
     Matrix<T> result{width, height, defaultValue};
     Point p;

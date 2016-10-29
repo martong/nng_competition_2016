@@ -22,8 +22,8 @@ public:
 
     PointRange(Point  begin, Point  end):
         begin_(begin),
-        end_(end)
-    {}
+        end_(end) {
+    }
 
     iterator begin() const;
     iterator end() const;
