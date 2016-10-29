@@ -377,19 +377,13 @@ struct game
 			building const &b=*pb;
 			std::vector<pos> all;
 			std::vector<pos> wave;
-			std::cerr << t_q2 << " " << b.id << "(" << (b.br.x0+b.br.x1)/2 << ", " << (b.br.y0+b.br.y1)/2 << "): ";
 			if(creep_cells(all,b) && creep_spread_candidates(wave,all))
 			{
-				for (pos p : wave) {
-					std::cerr << "(" << p.x << ", " << p.y << ")";
-				}
 				uint k=(t_q2*t_q2+37)%wave.size();
-				std::cerr << k;
 				pos nc=wave[k];
 				map_creep[nc.y][nc.x]=1;
 				++creep_cover;
 			}
-			std::cerr << "\n";
 		}
 	}
 	bool anything_to_do() const

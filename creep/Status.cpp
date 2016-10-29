@@ -96,9 +96,7 @@ void Status::addQueen() {
 void Status::spreadCreep() {
     std::size_t hash = time * time + 37;
     for (const Tumor& tumor : tumors) {
-        std::cerr << time << " " << tumor.id << tumor.position << ": ";
         spreadCreepFrom(tumor.position, hash);
-        std::cerr << "\n";
     }
 }
 
@@ -106,10 +104,6 @@ bool Status::spreadCreepFrom(Point p, std::size_t hash) {
     std::vector<Point> candidates = getSpreadArea(table, p,
             creepSpreadRadius, isCreepCandidate);
     if (!candidates.empty()) {
-        for (Point p : candidates) {
-            std::cerr << p;
-        }
-        std::cerr << hash % candidates.size();
         table[candidates[hash % candidates.size()]] = MapElement::Creep;
         --floorsRemaining;
         return true;
