@@ -62,6 +62,8 @@ void Game::print(std::ostream& stream) {
         stream << "Queen #" << queen.id << ": energy=" << queen.energy << "\n";
     }
 
+    stream << "Floors remaining: " << getStatus().getFloorsRemaining() << "\n";
+
     if (nextCommand != commands.end()) {
         const Command& command = nextCommand->second;
         stream << "Next command: time=" << command.time <<

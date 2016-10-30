@@ -42,6 +42,7 @@ public:
     const std::vector<Queen>& getQueens() const { return queens; }
     const Table& getTable() const { return table; }
     int getTime() const { return time; }
+    std::size_t getFloorsRemaining() const { return floorsRemaining; }
     bool canSpread() const;
 private:
     void addQueen();
