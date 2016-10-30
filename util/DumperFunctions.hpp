@@ -4,7 +4,6 @@
 #include "Matrix.hpp"
 #include <iostream>
 #include <string>
-#include <boost/lexical_cast.hpp>
 
 template<class T>
 void dumpMatrix(std::ostream& file, const Matrix<T> table,
@@ -16,7 +15,8 @@ void dumpMatrix(std::ostream& file, const Matrix<T> table,
     Matrix<std::string> txts(table.width(), table.height());
     size_t maxlen = 0;
     for (Point  p: matrixRange(table)) {
-        txts[p] = boost::lexical_cast<std::string>(table[p]);
+        using std::to_string;
+        txts[p] = to_string(table[p]);
         maxlen = std::max(maxlen, txts[p].size());
     }
     // leave a space between characters

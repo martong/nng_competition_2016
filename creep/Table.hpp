@@ -13,6 +13,11 @@ enum class MapElement : char {
 };
 
 inline
+std::string to_string(MapElement mapElement) {
+    return std::string{static_cast<char>(mapElement)};
+}
+
+inline
 std::istream& operator>>(std::istream& is, MapElement& mapElement) {
     char c;
     is.get(c);
