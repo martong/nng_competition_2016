@@ -28,4 +28,10 @@ struct Command {
     Point position;
 };
 
+inline
+bool operator==(const Command& lhs, const Command& rhs) {
+    return lhs.time == rhs.time && lhs.type == rhs.type &&
+            lhs.id == rhs.id && lhs.position == rhs.position;
+}
+
 #endif // CREEP_COMMAND_HPP

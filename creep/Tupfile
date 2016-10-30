@@ -4,7 +4,7 @@ include $(COMPILE_TUP)
 
 : creep.cc |> !cxx |> creep.oo
 
-INCLUDE_DIRS += -I$(UTIL_DIR)
+INCLUDE_DIRS += -I$(UTIL_DIR) -I$(CPP_UTIL_DIR)
 
 : foreach *.cpp |> !cxx |>
 

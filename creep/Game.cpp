@@ -2,12 +2,24 @@
 
 #include "Creep.hpp"
 
+#include <boost/range/iterator_range.hpp>
+
 Game::Game(std::istream& stream) {
     std::size_t width = 0;
     std::size_t height = 0;
     stream >> timeLimit >> width >> height;
     while (stream.get() != '\n') {}
     history.emplace_back(stream, width, height);
+}
+
+void Game::removeCommand(const Command& command) {
+    auto range = commands.equal_range(command.time);
+    for (auto iterator = range.first; iterator != range.second; ++iterator) {
+        if (iterator->second == command) {
+            commands.erase(iterator);
+            return;
+        }
+    }
 }
 
 void Game::tick() {

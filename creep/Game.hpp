@@ -10,7 +10,7 @@
 
 class Game {
 public:
-    using Commands = std::map<int, Command>;
+    using Commands = std::multimap<int, Command>;
 
     Game(std::istream& stream);
 
@@ -46,11 +46,19 @@ public:
         calculateNextCommand();
     }
 
+    void removeCommand(const Command& command);
+
+    void rewind(std::size_t amount) {
+        history.resize(history.size() - amount);
+        calculateNextCommand();
+    }
+
     void tick();
     void print(std::ostream& stream);
 
     const Status& getStatus() const { return history.back(); }
-    const Commands getCommands() const { return commands; }
+    const std::vector<Status>& getHistory() const { return history; }
+    const Commands& getCommands() const { return commands; }
 
     bool hasTime() const { return getStatus().getTime() < timeLimit; }
     bool canContinue() const;
