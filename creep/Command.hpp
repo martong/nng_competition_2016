@@ -1,5 +1,5 @@
-#ifndef CREEP_NODE_HPP
-#define CREEP_NODE_HPP
+#ifndef CREEP_COMMAND_HPP
+#define CREEP_COMMAND_HPP
 
 #include <Point.hpp>
 
@@ -9,15 +9,15 @@
 enum class CommandType { PlaceTumorFromQueen = 1, PlaceTumorFromTumor = 2 };
 
 inline
-std::ostream& operator<<(std::ostream& os, CommandType nodeType) {
-    return os << static_cast<int>(nodeType);
+std::ostream& operator<<(std::ostream& os, CommandType commandType) {
+    return os << static_cast<int>(commandType);
 }
 
 inline
-std::istream& operator>>(std::istream& is, CommandType& nodeType) {
+std::istream& operator>>(std::istream& is, CommandType& commandType) {
     int value;
     is >> value;
-    nodeType = static_cast<CommandType>(value);
+    commandType = static_cast<CommandType>(value);
     return is;
 }
 
@@ -28,4 +28,4 @@ struct Command {
     Point position;
 };
 
-#endif // CREEP_NODE_HPP
+#endif // CREEP_COMMAND_HPP

@@ -6,21 +6,21 @@
 
 #include <istream>
 #include <ostream>
-#include <vector>
+#include <map>
 
 class Game {
 public:
     Game(std::istream& stream);
 
-    void addCommand(const Command& node) {
-        nodes.push_back(node);
+    void addCommand(const Command& command) {
+        commands.push_back(command);
     }
 
     void tick();
     void print(std::ostream& stream);
 
     const Status& getStatus() const { return status; }
-    const std::vector<Command> getCommands() const { return nodes; }
+    const std::vector<Command> getCommands() const { return commands; }
 
     bool hasTime() const { return status.getTime() < timeLimit; }
     bool canContinue() const;
@@ -28,7 +28,7 @@ public:
 private:
     int timeLimit = 0;
     Status status;
-    std::vector<Command> nodes;
+    std::vector<Command> commands;
     std::size_t nextCommand = 0;
 };
 

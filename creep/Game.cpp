@@ -11,17 +11,18 @@ Game::Game(std::istream& stream) {
 }
 
 void Game::tick() {
-    if (nextCommand < nodes.size() && status.getTime() == nodes[nextCommand].time) {
-        const Command& node = nodes[nextCommand];
-        switch (node.type) {
+    if (nextCommand < commands.size() && status.getTime() == 
+            commands[nextCommand].time) {
+        const Command& command = commands[nextCommand];
+        switch (command.type) {
             case CommandType::PlaceTumorFromQueen:
-                status.addTumorFromQueen(node.id, node.position);
+                status.addTumorFromQueen(command.id, command.position);
                 break;
             case CommandType::PlaceTumorFromTumor:
-                status.addTumorFromTumor(node.id, node.position);
+                status.addTumorFromTumor(command.id, command.position);
                 break;
             default:
-                assert(false && "Impossible node type");
+                assert(false && "Impossible command type");
         }
         ++nextCommand;
     }
@@ -48,16 +49,16 @@ void Game::print(std::ostream& stream) {
         stream << "Queen #" << queen.id << ": energy=" << queen.energy << "\n";
     }
 
-    if (nextCommand < nodes.size()) {
-        const Command& node = nodes[nextCommand];
-        stream << "Next node: time=" << node.time << ", type=" << node.type <<
-                ", id=" << node.id << ", position=" << node.position << "\n";
+    if (nextCommand < commands.size()) {
+        const Command& command = commands[nextCommand];
+        stream << "Next command: time=" << command.time << ", type=" << command.type <<
+                ", id=" << command.id << ", position=" << command.position << "\n";
     } else {
-        stream << "No more nodes.\n";
+        stream << "No more commands.\n";
     }
     stream << status.getTable();
 }
 
 bool Game::canContinue() const {
-    return hasTime() && (nextCommand < nodes.size() || status.canSpread());
+    return hasTime() && (nextCommand < commands.size() || status.canSpread());
 }

@@ -11,10 +11,10 @@ int main(int argc, const char* argv[]) {
     int numberOfCommands = 0;
     std::cin >> numberOfCommands;
     for (int i = 0; i < numberOfCommands; ++i) {
-        Command node;
-        std::cin >> node.time >> node.type >> node.id >>
-                node.position.x >> node.position.y;
-        game.addCommand(node);
+        Command command;
+        std::cin >> command.time >> command.type >> command.id >>
+                command.position.x >> command.position.y;
+        game.addCommand(command);
     }
     game.print(std::cout);
     while (game.canContinue()) {
