@@ -14,9 +14,36 @@ public:
 
     Game(std::istream& stream);
 
+    Game(const Game& other) : timeLimit(other.timeLimit),
+            history(other.history), commands(other.commands) {
+        calculateNextCommand();
+    }
+
+    Game& operator=(const Game& other) {
+        timeLimit  = other.timeLimit;
+        history = other.history;
+        commands = other.commands;
+        calculateNextCommand();
+        return *this;
+    }
+
+    Game(Game&& other) : timeLimit(other.timeLimit),
+            history(std::move(other.history)),
+            commands(std::move(other.commands)) {
+        calculateNextCommand();
+    }
+
+    Game& operator=(Game&& other) {
+        timeLimit  = other.timeLimit;
+        history = std::move(other.history);
+        commands = std::move(other.commands);
+        calculateNextCommand();
+        return *this;
+    }
+
     void addCommand(const Command& command) {
         commands.emplace(command.time, command);
-        nextCommand = commands.lower_bound(getStatus().getTime());
+        calculateNextCommand();
     }
 
     void tick();
@@ -29,6 +56,10 @@ public:
     bool canContinue() const;
 
 private:
+    void calculateNextCommand() {
+        nextCommand = commands.lower_bound(getStatus().getTime());
+    }
+
     int timeLimit = 0;
     std::vector<Status> history;
     Commands commands;
