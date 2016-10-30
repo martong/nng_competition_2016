@@ -5,9 +5,18 @@
 #include <iostream>
 #include <string>
 
-template<class T>
+struct ToString {
+    template<typename T>
+    std::string operator()(T&& t) const {
+        using std::to_string;
+        return to_string(std::forward<T>(t));
+    }
+};
+
+template<typename T, typename Converter = ToString>
 void dumpMatrix(std::ostream& file, const Matrix<T> table,
-        const std::string& title = "", int indent = 0) {
+        const std::string& title = "", int indent = 0,
+        const Converter& converter = Converter{}) {
     std::string indentString(indent, ' ');
     if (!title.empty()) {
         file << indentString << title << std::endl;
@@ -15,8 +24,7 @@ void dumpMatrix(std::ostream& file, const Matrix<T> table,
     Matrix<std::string> txts(table.width(), table.height());
     size_t maxlen = 0;
     for (Point  p: matrixRange(table)) {
-        using std::to_string;
-        txts[p] = to_string(table[p]);
+        txts[p] = converter(table[p]);
         maxlen = std::max(maxlen, txts[p].size());
     }
     // leave a space between characters

@@ -76,6 +76,11 @@ void Game::print(std::ostream& stream) {
 }
 
 bool Game::canContinue() const {
+    const auto& tumors = getStatus().getTumors();
     return hasTime() && (nextCommand != commands.end() ||
-            getStatus().canSpread());
+            getStatus().canSpread() || std::find_if(
+                    tumors.begin(), tumors.end(),
+                    [](const Tumor& tumor) {
+                        return tumor.cooldown > 0;
+                    }) != tumors.end());
 }

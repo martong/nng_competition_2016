@@ -33,6 +33,10 @@ inline bool isFloor(const Table& table, Point p) {
     return table[p] == MapElement::Floor;
 }
 
+inline bool isCreep(const Table& table, Point p) {
+    return table[p] == MapElement::Creep;
+}
+
 inline bool hasCreep(MapElement element) {
     return element != MapElement::Wall && element != MapElement::Floor;
 }

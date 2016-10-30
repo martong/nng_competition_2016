@@ -42,7 +42,6 @@ void serialize(Archive& ar, Point& p, const unsigned int /*version*/) {
     ar & p.y;
 }
 
-
 constexpr Point p10{1, 0}, p01{0, 1}, p11{1, 1};
 
 inline constexpr bool operator==(Point p1, Point p2) {
@@ -76,6 +75,12 @@ inline constexpr bool operator<(Point p1, Point p2) {
 inline int distance(Point p1, Point p2) {
     auto d = p1 - p2;
     return abs(d.x) + abs(d.y);
+}
+
+inline
+int distanceSquare(Point p1, Point p2) {
+    Point difference = p1 - p2;
+    return difference.x * difference.x + difference.y * difference.y;
 }
 
 std::ostream& operator<<(std::ostream& os, Point p);

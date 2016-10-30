@@ -48,8 +48,9 @@ public:
 
     void removeCommand(const Command& command);
 
-    void rewind(std::size_t amount) {
-        history.resize(history.size() - amount);
+    void rewind(int to) {
+        history.resize(to + 1);
+        assert(getStatus().getTime() == to);
         calculateNextCommand();
     }
 

@@ -48,31 +48,37 @@ class PointRangeIterator: public boost::iterator_facade<
         Point,
         boost::bidirectional_traversal_tag,
         Point > {
+public:
+    PointRangeIterator(const PointRangeIterator&) = default;
+    PointRangeIterator(PointRangeIterator&&) = default;
 
+    PointRangeIterator& operator=(const PointRangeIterator&) = default;
+    PointRangeIterator& operator=(PointRangeIterator&&) = default;
 
-    const PointRange& owner_;
+private:
+    const PointRange* owner_;
     Point p_;
 
     friend class PointRange;
     friend class boost::iterator_core_access;
 
     PointRangeIterator(const PointRange& owner, Point  p):
-        owner_(owner),
+        owner_(&owner),
         p_(p)
     {}
     Point  dereference() const { return p_; }
     void increment()
     {
         ++p_.x;
-        if (p_.x == owner_.end_.x) {
-            p_.x = owner_.begin_.x;
+        if (p_.x == owner_->end_.x) {
+            p_.x = owner_->begin_.x;
             ++p_.y;
         }
     }
     void decrement()
     {
-        if (p_.x == owner_.begin_.x) {
-            p_.x = owner_.end_.x - 1;
+        if (p_.x == owner_->begin_.x) {
+            p_.x = owner_->end_.x - 1;
             --p_.y;
         } else {
             --p_.x;
