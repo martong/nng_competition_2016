@@ -11,9 +11,9 @@ Game::Game(std::istream& stream) {
 }
 
 void Game::tick() {
-    if (nextCommand < commands.size() && status.getTime() == 
-            commands[nextCommand].time) {
-        const Command& command = commands[nextCommand];
+    if (nextCommand != commands.end() && status.getTime() ==
+            nextCommand->first) {
+        const Command& command = nextCommand->second;
         switch (command.type) {
             case CommandType::PlaceTumorFromQueen:
                 status.addTumorFromQueen(command.id, command.position);
@@ -49,10 +49,11 @@ void Game::print(std::ostream& stream) {
         stream << "Queen #" << queen.id << ": energy=" << queen.energy << "\n";
     }
 
-    if (nextCommand < commands.size()) {
-        const Command& command = commands[nextCommand];
-        stream << "Next command: time=" << command.time << ", type=" << command.type <<
-                ", id=" << command.id << ", position=" << command.position << "\n";
+    if (nextCommand != commands.end()) {
+        const Command& command = nextCommand->second;
+        stream << "Next command: time=" << command.time <<
+                ", type=" << command.type << ", id=" << command.id <<
+                ", position=" << command.position << "\n";
     } else {
         stream << "No more commands.\n";
     }
@@ -60,5 +61,5 @@ void Game::print(std::ostream& stream) {
 }
 
 bool Game::canContinue() const {
-    return hasTime() && (nextCommand < commands.size() || status.canSpread());
+    return hasTime() && (nextCommand != commands.end() || status.canSpread());
 }

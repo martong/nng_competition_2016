@@ -10,17 +10,20 @@
 
 class Game {
 public:
+    using Commands = std::map<int, Command>;
+
     Game(std::istream& stream);
 
     void addCommand(const Command& command) {
-        commands.push_back(command);
+        commands.emplace(command.time, command);
+        nextCommand = commands.lower_bound(status.getTime());
     }
 
     void tick();
     void print(std::ostream& stream);
 
     const Status& getStatus() const { return status; }
-    const std::vector<Command> getCommands() const { return commands; }
+    const Commands getCommands() const { return commands; }
 
     bool hasTime() const { return status.getTime() < timeLimit; }
     bool canContinue() const;
@@ -28,8 +31,8 @@ public:
 private:
     int timeLimit = 0;
     Status status;
-    std::vector<Command> commands;
-    std::size_t nextCommand = 0;
+    Commands commands;
+    Commands::iterator nextCommand = commands.end();
 };
 
 #endif // CREEP_GAME_HPP
