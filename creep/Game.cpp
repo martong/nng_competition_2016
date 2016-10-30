@@ -11,19 +11,19 @@ Game::Game(std::istream& stream) {
 }
 
 void Game::tick() {
-    if (nextNode < nodes.size() && status.getTime() == nodes[nextNode].time) {
-        const Node& node = nodes[nextNode];
+    if (nextCommand < nodes.size() && status.getTime() == nodes[nextCommand].time) {
+        const Command& node = nodes[nextCommand];
         switch (node.type) {
-            case NodeType::PlaceTumorFromQueen:
+            case CommandType::PlaceTumorFromQueen:
                 status.addTumorFromQueen(node.id, node.position);
                 break;
-            case NodeType::PlaceTumorFromTumor:
+            case CommandType::PlaceTumorFromTumor:
                 status.addTumorFromTumor(node.id, node.position);
                 break;
             default:
                 assert(false && "Impossible node type");
         }
-        ++nextNode;
+        ++nextCommand;
     }
     status.tick();
 
@@ -48,8 +48,8 @@ void Game::print(std::ostream& stream) {
         stream << "Queen #" << queen.id << ": energy=" << queen.energy << "\n";
     }
 
-    if (nextNode < nodes.size()) {
-        const Node& node = nodes[nextNode];
+    if (nextCommand < nodes.size()) {
+        const Command& node = nodes[nextCommand];
         stream << "Next node: time=" << node.time << ", type=" << node.type <<
                 ", id=" << node.id << ", position=" << node.position << "\n";
     } else {
@@ -59,5 +59,5 @@ void Game::print(std::ostream& stream) {
 }
 
 bool Game::canContinue() const {
-    return hasTime() && (nextNode < nodes.size() || status.canSpread());
+    return hasTime() && (nextCommand < nodes.size() || status.canSpread());
 }

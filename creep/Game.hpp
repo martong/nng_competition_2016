@@ -1,7 +1,7 @@
 #ifndef CREEP_GAME_HPP
 #define CREEP_GAME_HPP
 
-#include "Node.hpp"
+#include "Command.hpp"
 #include "Status.hpp"
 
 #include <istream>
@@ -12,7 +12,7 @@ class Game {
 public:
     Game(std::istream& stream);
 
-    void addNode(const Node& node) {
+    void addCommand(const Command& node) {
         nodes.push_back(node);
     }
 
@@ -20,7 +20,7 @@ public:
     void print(std::ostream& stream);
 
     const Status& getStatus() const { return status; }
-    const std::vector<Node> getNodes() const { return nodes; }
+    const std::vector<Command> getCommands() const { return nodes; }
 
     bool hasTime() const { return status.getTime() < timeLimit; }
     bool canContinue() const;
@@ -28,8 +28,8 @@ public:
 private:
     int timeLimit = 0;
     Status status;
-    std::vector<Node> nodes;
-    std::size_t nextNode = 0;
+    std::vector<Command> nodes;
+    std::size_t nextCommand = 0;
 };
 
 #endif // CREEP_GAME_HPP
