@@ -22,6 +22,7 @@ public:
 
     std::vector<Command> solve() {
         addQueenAction(game.getStatus().getQueens()[0]);
+        game.tick();
         doSolve();
         std::vector<Command> result;
         result.reserve(game.getCommands().size());
@@ -43,6 +44,7 @@ private:
                 forwardToNextAvailableTumor();
                 std::cerr << "Moved to time: " << game.getStatus().getTime() << "\n";
                 for (const Tumor& tumor : game.getStatus().getTumors()) {
+                    pendingPositions.erase(tumor.position);
                     if (isTumorAddable(tumor)) {
                         std::cerr << "Adding action to tumor #" << tumor.id <<
                                 "\n";
@@ -56,17 +58,34 @@ private:
                         pendingTumors.erase(tumor.id);
                     }
                 }
-            } catch (Finished&) {}
+                for (const Queen queen: game.getStatus().getQueens()) {
+                    if (isQueenAddable(queen)) {
+                        std::cerr << "Adding action to queen #" << queen.id <<
+                                "\n";
+                        addQueenAction(queen);
+                        didSomething = true;
+                    }
+                }
+                tick();
+            } catch (Finished&) {
+                std::cerr << "Done." << std::endl;
+            }
             ++iterations;
         }
     }
 
     void forwardToNextAvailableTumor() {
-        while (!std::any_of(game.getStatus().getTumors().begin(),
-                game.getStatus().getTumors().end(),
-                [this](const Tumor& tumor) {
-                    return isTumorAddable(tumor);
-                }) && game.canContinue()) {
+        while (
+                !std::any_of(game.getStatus().getTumors().begin(),
+                        game.getStatus().getTumors().end(),
+                        [this](const Tumor& tumor) {
+                            return isTumorAddable(tumor);
+                        }) &&
+                !std::any_of(game.getStatus().getQueens().begin(),
+                        game.getStatus().getQueens().end(),
+                        [this](const Queen& queen) {
+                            return isQueenAddable(queen);
+                        }) && game.canContinue()) {
             tick();
         }
     }
@@ -74,6 +93,18 @@ private:
     bool isTumorAddable(const Tumor& tumor) {
         return tumor.cooldown == 0 &&
                 pendingTumors.find(tumor.id) == pendingTumors.end();
+    }
+
+    bool isQueenAddable(const Queen& queen) {
+        return queen.energy >= queenEnertyRequirement;
+    }
+
+    template<typename Predicate>
+    auto notPendingPredicate(const Predicate& predicate) {
+        return
+                [this, &predicate](const Table& table, Point p) {
+                    return predicate(table, p) && isNotPending(p);
+                };
     }
 
     void addTumorAction(const Tumor& tumor) {
@@ -91,12 +122,14 @@ private:
         int startTime = game.getStatus().getTime();
         Matrix<VelocityData> velocities{game.getStatus().getTable().width(),
                 game.getStatus().getTable().height()};
-        for (Point p : getSpreadArea(game.getStatus().getTable(), tumor.position,
-                creepSpreadRadius, isCreep)) {
+        for (Point p : getSpreadArea(game.getStatus().getTable(),
+                tumor.position, creepSpreadRadius,
+                notPendingPredicate(isCreep))) {
             velocities[p].time = game.getStatus().getTime();
         }
-        auto spreadPoints = getSpreadArea(game.getStatus().getTable(), tumor.position,
-                creepSpreadRadius, isFloor);
+        auto spreadPoints = getSpreadArea(game.getStatus().getTable(),
+                tumor.position, creepSpreadRadius,
+                notPendingPredicate(isFloor));
         while (game.canContinue()) {
             tick();
             std::vector<Point> newSpreadPoints;
@@ -117,15 +150,15 @@ private:
                     velocities[p].time - startTime + 1);
         }
         game.rewind(startTime);
-        //dumpMatrix(std::cerr, game.getStatus().getTable());
-        //dumpMatrix(std::cerr, velocities, "", 0,
-                //[](const VelocityData& data) {
-                    //return (boost::format("%1.2f") % data.velocity).str();
-                //});
-        //dumpMatrix(std::cerr, velocities, "", 0,
-                //[](const VelocityData& data) {
-                    //return std::to_string(data.time);
-                //});
+        dumpMatrix(std::cerr, game.getStatus().getTable());
+        dumpMatrix(std::cerr, velocities, "", 0,
+                [](const VelocityData& data) {
+                    return (boost::format("%1.2f") % data.velocity).str();
+                });
+        dumpMatrix(std::cerr, velocities, "", 0,
+                [](const VelocityData& data) {
+                    return std::to_string(data.time);
+                });
         PointRange range{
                 Point{std::max<int>(tumor.position.x -
                               creepSpreadRadius + 1, 0),
@@ -141,10 +174,10 @@ private:
                     [&velocities](Point lhs, Point rhs) {
                         return velocities[lhs] < velocities[rhs];
                     });
-        std::cerr << "Adding command: time=" << velocities[bestPoint].time <<
-                " id=" << tumor.id << " position=" << bestPoint << "\n";
-        game.addCommand({velocities[bestPoint].time,
-                CommandType::PlaceTumorFromTumor, tumor.id, bestPoint});
+        if (velocities[bestPoint].time != 0) {
+            addCommand(velocities[bestPoint].time,
+                    CommandType::PlaceTumorFromTumor, tumor.id, bestPoint);
+        }
     }
 
     void tick() {
@@ -160,7 +193,8 @@ private:
                 table.width(), table.height(), 0};
         std::vector<Point> candidates;
         for (Point p : matrixRange(table)) {
-            if (table[p] == MapElement::Creep) {
+            if (table[p] == MapElement::Creep &&
+                    isNotPending(p)) {
                 spreadPossibilities[p] = getSpreadArea(table, p,
                         creepSpreadRadius, isFloor).size();
                 candidates.push_back(p);
@@ -170,12 +204,26 @@ private:
                 [&spreadPossibilities](const Point& lhs, const Point& rhs) {
                     return spreadPossibilities[lhs] < spreadPossibilities[rhs];
                 });
-        game.addCommand({game.getStatus().getTime(),
-                CommandType::PlaceTumorFromQueen, queen.id, bestPoint});
+        addCommand(game.getStatus().getTime(),
+                CommandType::PlaceTumorFromQueen, queen.id, bestPoint);
+    }
+
+    void addCommand(int time, CommandType type, int id, Point p) {
+        std::cerr << "Adding command: time=" << time << " type=" << type <<
+                " id=" << id << " position=" << p << "\n";
+        assert(pendingPositions.find(p) == pendingPositions.end());
+        assert(time >= game.getStatus().getTime());
+        game.addCommand({time, type, id, p});
+        pendingPositions.insert(p);
+    }
+
+    bool isNotPending(Point p) {
+        return pendingPositions.find(p) == pendingPositions.end();
     }
 
     Game game;
     boost::container::flat_set<int> pendingTumors;
+    boost::container::flat_set<Point> pendingPositions;
 };
 
 } // unnamed namespace
