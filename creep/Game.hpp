@@ -16,21 +16,21 @@ public:
 
     void addCommand(const Command& command) {
         commands.emplace(command.time, command);
-        nextCommand = commands.lower_bound(status.getTime());
+        nextCommand = commands.lower_bound(getStatus().getTime());
     }
 
     void tick();
     void print(std::ostream& stream);
 
-    const Status& getStatus() const { return status; }
+    const Status& getStatus() const { return history.back(); }
     const Commands getCommands() const { return commands; }
 
-    bool hasTime() const { return status.getTime() < timeLimit; }
+    bool hasTime() const { return getStatus().getTime() < timeLimit; }
     bool canContinue() const;
 
 private:
     int timeLimit = 0;
-    Status status;
+    std::vector<Status> history;
     Commands commands;
     Commands::iterator nextCommand = commands.end();
 };

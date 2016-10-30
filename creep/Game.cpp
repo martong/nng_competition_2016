@@ -7,10 +7,11 @@ Game::Game(std::istream& stream) {
     std::size_t height = 0;
     stream >> timeLimit >> width >> height;
     while (stream.get() != '\n') {}
-    status = Status{stream, width, height};
+    history.emplace_back(stream, width, height);
 }
 
 void Game::tick() {
+    Status status = getStatus();
     if (nextCommand != commands.end() && status.getTime() ==
             nextCommand->first) {
         const Command& command = nextCommand->second;
@@ -27,12 +28,12 @@ void Game::tick() {
         ++nextCommand;
     }
     status.tick();
-
+    history.push_back(status);
 }
 
 void Game::print(std::ostream& stream) {
-    stream << "Tick " << status.getTime() << "\n";
-    for (const Tumor& tumor : status.getTumors()) {
+    stream << "Tick " << getStatus().getTime() << "\n";
+    for (const Tumor& tumor : getStatus().getTumors()) {
         stream << "Tumor #" << tumor.id << ": " << tumor.position <<
                 " ";
         if (tumor.cooldown > 0) {
@@ -45,7 +46,7 @@ void Game::print(std::ostream& stream) {
         stream << "\n";
     }
 
-    for (const Queen& queen : status.getQueens()) {
+    for (const Queen& queen : getStatus().getQueens()) {
         stream << "Queen #" << queen.id << ": energy=" << queen.energy << "\n";
     }
 
@@ -57,9 +58,10 @@ void Game::print(std::ostream& stream) {
     } else {
         stream << "No more commands.\n";
     }
-    stream << status.getTable();
+    stream << getStatus().getTable();
 }
 
 bool Game::canContinue() const {
-    return hasTime() && (nextCommand != commands.end() || status.canSpread());
+    return hasTime() && (nextCommand != commands.end() ||
+            getStatus().canSpread());
 }
