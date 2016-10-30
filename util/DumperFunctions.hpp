@@ -4,7 +4,6 @@
 #include "Matrix.hpp"
 #include <iostream>
 #include <string>
-#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
 template<class T>
