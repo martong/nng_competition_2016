@@ -24,7 +24,7 @@ void Game::removeCommand(const Command& command) {
 
 void Game::tick() {
     Status status = getStatus();
-    if (nextCommand != commands.end() && status.getTime() ==
+    while (nextCommand != commands.end() && status.getTime() ==
             nextCommand->first) {
         const Command& command = nextCommand->second;
         switch (command.type) {
