@@ -9,7 +9,7 @@ Game::Game(std::istream& stream) {
     std::size_t height = 0;
     stream >> timeLimit >> width >> height;
     while (stream.get() != '\n') {}
-    history.emplace_back(stream, width, height);
+    status = Status{stream, width, height};
 }
 
 void Game::removeCommand(const Command& command) {
@@ -30,7 +30,6 @@ void Game::removeCommands(Commands::const_iterator from,
 }
 
 void Game::tick() {
-    Status status = getStatus();
     while (nextCommand != commands.end() && status.getTime() ==
             nextCommand->first) {
         const Command& command = nextCommand->second;
@@ -47,12 +46,12 @@ void Game::tick() {
         ++nextCommand;
     }
     status.tick();
-    history.push_back(status);
+
 }
 
 void Game::print(std::ostream& stream) {
-    stream << "Tick " << getStatus().getTime() << "\n";
-    for (const Tumor& tumor : getStatus().getTumors()) {
+    stream << "Tick " << status.getTime() << "\n";
+    for (const Tumor& tumor : status.getTumors()) {
         stream << "Tumor #" << tumor.id << ": " << tumor.position <<
                 " ";
         if (tumor.cooldown > 0) {
@@ -65,7 +64,7 @@ void Game::print(std::ostream& stream) {
         stream << "\n";
     }
 
-    for (const Queen& queen : getStatus().getQueens()) {
+    for (const Queen& queen : status.getQueens()) {
         stream << "Queen #" << queen.id << ": energy=" << queen.energy << "\n";
     }
 
@@ -79,13 +78,13 @@ void Game::print(std::ostream& stream) {
     } else {
         stream << "No more commands.\n";
     }
-    stream << getStatus().getTable();
+    stream << status.getTable();
 }
 
 bool Game::canContinue() const {
-    const auto& tumors = getStatus().getTumors();
+    const auto& tumors = status.getTumors();
     return hasTime() && (nextCommand != commands.end() ||
-            getStatus().canSpread() || std::find_if(
+            status.canSpread() || std::find_if(
                     tumors.begin(), tumors.end(),
                     [](const Tumor& tumor) {
                         return tumor.cooldown > 0;

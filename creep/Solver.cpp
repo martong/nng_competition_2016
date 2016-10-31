@@ -123,6 +123,7 @@ private:
         };
 
         int startTime = game.getStatus().getTime();
+        Game gameTmp = game;
         Matrix<HeuristicsData> heuristicsTable{
                 game.getStatus().getTable().width(),
                 game.getStatus().getTable().height()};
@@ -166,7 +167,7 @@ private:
                     (heuristicsTable[p].time - startTime + 1) *
                     heuristics.timeMultiplier;
         }
-        game.rewind(startTime);
+        game = gameTmp;
         //dumpMatrix(LOG, game.getStatus().getTable());
         //dumpMatrix(LOG, heuristicsTable, "", 0,
                 //[](const HeuristicsData& data) {

@@ -15,27 +15,27 @@ public:
     Game(std::istream& stream);
 
     Game(const Game& other) : timeLimit(other.timeLimit),
-            history(other.history), commands(other.commands) {
+            status(other.status), commands(other.commands) {
         calculateNextCommand();
     }
 
     Game& operator=(const Game& other) {
         timeLimit  = other.timeLimit;
-        history = other.history;
+        status = other.status;
         commands = other.commands;
         calculateNextCommand();
         return *this;
     }
 
     Game(Game&& other) : timeLimit(other.timeLimit),
-            history(std::move(other.history)),
+            status(std::move(other.status)),
             commands(std::move(other.commands)) {
         calculateNextCommand();
     }
 
     Game& operator=(Game&& other) {
         timeLimit  = other.timeLimit;
-        history = std::move(other.history);
+        status = std::move(other.status);
         commands = std::move(other.commands);
         calculateNextCommand();
         return *this;
@@ -50,20 +50,13 @@ public:
     void removeCommands(Commands::const_iterator from,
             Commands::const_iterator to);
 
-    void rewind(int to) {
-        history.resize(to + 1);
-        assert(getStatus().getTime() == to);
-        calculateNextCommand();
-    }
-
     void tick();
     void print(std::ostream& stream);
 
-    const Status& getStatus() const { return history.back(); }
-    const std::vector<Status>& getHistory() const { return history; }
+    const Status& getStatus() const { return status; }
     const Commands& getCommands() const { return commands; }
 
-    bool hasTime() const { return getStatus().getTime() < timeLimit; }
+    bool hasTime() const { return status.getTime() < timeLimit; }
     bool canContinue() const;
 
 private:
@@ -72,7 +65,7 @@ private:
     }
 
     int timeLimit = 0;
-    std::vector<Status> history;
+    Status status;
     Commands commands;
     Commands::iterator nextCommand = commands.end();
 };
