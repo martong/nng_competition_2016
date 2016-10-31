@@ -4,6 +4,18 @@
 #include "Game.hpp"
 #include "Command.hpp"
 
-std::vector<Command> findSolution(Game game);
+struct Heuristics {
+    float timeMultiplier;
+    float distanceSquareMultiplier;
+    float spreadRadiusMultiplier;
+};
+
+struct Solution {
+    std::vector<Command> commands;
+    int floorsRemaining;
+    int time;
+};
+
+Solution findSolution(Game game, const Heuristics& heuristics);
 
 #endif // CREEP_SOLVER_HPP

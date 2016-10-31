@@ -47,6 +47,8 @@ public:
     }
 
     void removeCommand(const Command& command);
+    void removeCommands(Commands::const_iterator from,
+            Commands::const_iterator to);
 
     void rewind(int to) {
         history.resize(to + 1);

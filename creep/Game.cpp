@@ -17,9 +17,16 @@ void Game::removeCommand(const Command& command) {
     for (auto iterator = range.first; iterator != range.second; ++iterator) {
         if (iterator->second == command) {
             commands.erase(iterator);
+            calculateNextCommand();
             return;
         }
     }
+}
+
+void Game::removeCommands(Commands::const_iterator from,
+        Commands::const_iterator to) {
+    commands.erase(from, to);
+    calculateNextCommand();
 }
 
 void Game::tick() {
