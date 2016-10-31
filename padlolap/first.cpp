@@ -40,7 +40,6 @@ int main(int argc, const char* argv[]) {
 
     mpz_int sideLog = boost::lexical_cast<mpz_int>(argv[1]);
     mpz_int side = tenPower(sideLog) + 1;
-    side = 4;
     mpz_int result = side;
     for (mpz_int i = 1; i != side; ++i) {
         result += nTimesSqrt2(i);
