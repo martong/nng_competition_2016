@@ -1,0 +1,12 @@
+include_rules
+
+include $(COMPILE_TUP)
+
+LIBS += -lgmp
+
+: foreach *.cpp |> !cxx |>
+
+include $(LINK_TUP)
+
+: first.o |> !linker |> first
+: second.o |> !linker |> second
