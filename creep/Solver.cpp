@@ -96,7 +96,7 @@ private:
     }
 
     bool isQueenAddable(const Queen& queen) {
-        return queen.energy >= queenEnertyRequirement;
+        return queen.energy >= rules::queenEnertyRequirement;
     }
 
     template<typename Predicate>
@@ -123,12 +123,12 @@ private:
         Matrix<VelocityData> velocities{game.getStatus().getTable().width(),
                 game.getStatus().getTable().height()};
         for (Point p : getSpreadArea(game.getStatus().getTable(),
-                tumor.position, creepSpreadRadius,
+                tumor.position, rules::creepSpreadRadius,
                 notPendingPredicate(isCreep))) {
             velocities[p].time = game.getStatus().getTime();
         }
         auto spreadPoints = getSpreadArea(game.getStatus().getTable(),
-                tumor.position, creepSpreadRadius,
+                tumor.position, rules::creepSpreadRadius,
                 notPendingPredicate(isFloor));
         while (game.canContinue()) {
             tick();
@@ -143,9 +143,9 @@ private:
             spreadPoints = newSpreadPoints;
         }
         for (Point p : getSpreadArea(game.getStatus().getTable(),
-                tumor.position, creepSpreadRadius, isCreep)) {
+                tumor.position, rules::creepSpreadRadius, isCreep)) {
             float newSpreadSize = getSpreadArea(game.getStatus().getTable(), p,
-                    creepSpreadRadius, isFloor).size();
+                    rules::creepSpreadRadius, isFloor).size();
             velocities[p].velocity = newSpreadSize / (
                     velocities[p].time - startTime + 1);
         }
@@ -161,14 +161,14 @@ private:
                 });
         PointRange range{
                 Point{std::max<int>(tumor.position.x -
-                              creepSpreadRadius + 1, 0),
+                              rules::creepSpreadRadius + 1, 0),
                       std::max<int>(tumor.position.y -
-                              creepSpreadRadius + 1, 0)},
+                              rules::creepSpreadRadius + 1, 0)},
                 Point{std::min<int>(tumor.position.x +
-                              creepSpreadRadius,
+                              rules::creepSpreadRadius,
                               game.getStatus().getTable().width() - 1),
                       std::min<int>(tumor.position.y +
-                              creepSpreadRadius,
+                              rules::creepSpreadRadius,
                               game.getStatus().getTable().height() - 1)}};
         Point bestPoint = *std::max_element(range.begin(), range.end(),
                     [&velocities](Point lhs, Point rhs) {
@@ -196,7 +196,7 @@ private:
             if (table[p] == MapElement::Creep &&
                     isNotPending(p)) {
                 spreadPossibilities[p] = getSpreadArea(table, p,
-                        creepSpreadRadius, isFloor).size();
+                        rules::creepSpreadRadius, isFloor).size();
                 candidates.push_back(p);
             }
         }

@@ -23,10 +23,10 @@ Status::Status(std::istream& stream, std::size_t width, std::size_t height) {
 
     // place hatchery
     for (Point p : PointRange{hatcheryPosition,
-            hatcheryPosition + p11 * hatcherySize}) {
+            hatcheryPosition + p11 * rules::hatcherySize}) {
         table[p] = MapElement::Hatchery;
     }
-    Point hatcheryCenter = hatcheryPosition + p11 * hatcheryCenterOffset;
+    Point hatcheryCenter = hatcheryPosition + p11 * rules::hatcheryCenterOffset;
     tumors.emplace_back(1, hatcheryCenter, -1);
 
     // place a creep tile
@@ -56,20 +56,20 @@ void Status::tick() {
         }
     }
     for (Queen& queen : queens) {
-        if (queen.energy < queenMaximumEnergy) {
+        if (queen.energy < rules::queenMaximumEnergy) {
             ++queen.energy;
         }
     }
     ++time;
-    if (time % queenSpawnTime == 0) {
+    if (time % rules::queenSpawnTime == 0) {
         addQueen();
     }
 }
 
 const Tumor& Status::addTumorFromQueen(int id, Point position) {
     Queen& queen = findObjectWithId(queens, id);
-    assert(queen.energy >= queenEnertyRequirement);
-    queen.energy -= queenEnertyRequirement;
+    assert(queen.energy >= rules::queenEnertyRequirement);
+    queen.energy -= rules::queenEnertyRequirement;
     return addTumor(position);
 }
 
@@ -84,13 +84,13 @@ const Tumor& Status::addTumorFromTumor(int id, Point position) {
 bool Status::canSpread() const {
     return std::any_of(tumors.begin(), tumors.end(),
             [this](const Tumor& tumor) {
-                return !getSpreadArea(table, tumor.position, creepSpreadRadius,
-                        isCreepCandidate).empty();
+                return !getSpreadArea(table, tumor.position,
+                        rules::creepSpreadRadius, isCreepCandidate).empty();
             });
 }
 
 void Status::addQueen() {
-    queens.emplace_back(nextId++, queenStartingEnergy);
+    queens.emplace_back(nextId++, rules::queenStartingEnergy);
 }
 
 void Status::spreadCreep() {
@@ -102,7 +102,7 @@ void Status::spreadCreep() {
 
 bool Status::spreadCreepFrom(Point p, std::size_t hash) {
     std::vector<Point> candidates = getSpreadArea(table, p,
-            creepSpreadRadius, isCreepCandidate);
+            rules::creepSpreadRadius, isCreepCandidate);
     if (!candidates.empty()) {
         table[candidates[hash % candidates.size()]] = MapElement::Creep;
         --floorsRemaining;
@@ -113,7 +113,7 @@ bool Status::spreadCreepFrom(Point p, std::size_t hash) {
 
 const Tumor& Status::addTumor(Point position) {
     assert(table[position] == MapElement::Creep);
-    tumors.emplace_back(nextId++, position, tumorCooldownTime);
+    tumors.emplace_back(nextId++, position, rules::tumorCooldownTime);
     table[position] = MapElement::TumorCooldown;
     return tumors.back();
 }
