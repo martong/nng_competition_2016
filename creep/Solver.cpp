@@ -48,6 +48,8 @@ private:
                 LOG << "Moved to time: " << game.getStatus().getTime() << "\n";
                 for (const Tumor& tumor : game.getStatus().getTumors()) {
                     pendingPositions.erase(tumor.position);
+                }
+                for (const Tumor& tumor : game.getStatus().getTumors()) {
                     if (isTumorAddable(tumor)) {
                         LOG << "Adding action to tumor #" << tumor.id <<
                                 "\n";
@@ -152,18 +154,9 @@ private:
                 tumor.position, rules::creepSpreadRadius, isCreep)) {
             float newSpreadSize = getSpreadArea(gameTmp.getStatus().getTable(), p,
                     rules::creepSpreadRadius, isFloor).size();
-            float distanceValue = 0.0f;
-            for (const Tumor& tumor : gameTmp.getStatus().getTumors()) {
-                distanceValue += heuristics.distanceSquareMultiplier /
-                        distanceSquare(p, tumor.position);
-            }
-            for (Point pendingPosition : pendingPositions) {
-                distanceValue += heuristics.distanceSquareMultiplier /
-                        distanceSquare(p, pendingPosition);
-            }
-                heuristicsTable[p].value = newSpreadSize *
+            heuristicsTable[p].value = newSpreadSize *
                     heuristics.spreadRadiusMultiplier +
-                    distanceValue +
+                    calculateDistanceValue(p) +
                     (heuristicsTable[p].time - startTime + 1) *
                     heuristics.timeMultiplier;
         }
@@ -197,6 +190,19 @@ private:
         }
     }
 
+    float calculateDistanceValue(Point p) {
+        float distanceValue = 0.0f;
+        for (const Tumor& tumor : game.getStatus().getTumors()) {
+            distanceValue += heuristics.distanceSquareMultiplier /
+                    distanceSquare(p, tumor.position);
+        }
+        for (Point pendingPosition : pendingPositions) {
+            distanceValue += heuristics.distanceSquareMultiplier /
+                    distanceSquare(p, pendingPosition);
+        }
+        return distanceValue;
+    }
+
     void tick() {
         game.tick();
         if (game.getStatus().getFloorsRemaining() == 0) {
@@ -206,18 +212,21 @@ private:
 
     void addQueenAction(const Queen& queen) {
         const Table& table = game.getStatus().getTable();
-        Matrix<std::size_t> spreadPossibilities{
+        Matrix<float> spreadPossibilities{
                 table.width(), table.height(), 0};
         std::vector<Point> candidates;
         for (Point p : matrixRange(table)) {
             if (table[p] == MapElement::Creep &&
                     isNotPending(p)) {
                 spreadPossibilities[p] = getSpreadArea(table, p,
-                        rules::creepSpreadRadius, isFloor).size();
+                        rules::creepSpreadRadius, isFloor).size() *
+                        heuristics.spreadRadiusMultiplier +
+                        calculateDistanceValue(p);
                 candidates.push_back(p);
             }
         }
-        Point bestPoint = *std::max_element(candidates.begin(), candidates.end(),
+        Point bestPoint = *std::max_element(
+                candidates.begin(), candidates.end(),
                 [&spreadPossibilities](const Point& lhs, const Point& rhs) {
                     return spreadPossibilities[lhs] < spreadPossibilities[rhs];
                 });
