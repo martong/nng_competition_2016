@@ -38,16 +38,22 @@ void solve(Game& game, const Options& options) {
                                     });
                         });
             });
-    const auto& commands = std::min_element(solutions.begin(), solutions.end(),
-            [](const Solution& lhs, const Solution& rhs) {
-                return lhs.floorsRemaining < rhs.floorsRemaining ||
-                        (lhs.floorsRemaining == rhs.floorsRemaining && 
-                         lhs.time < rhs.time);
-            })->commands;
     if (solutions.empty()) {
         std::cerr << "There was no simulations.\n";
         return;
     }
+    const auto& solution = *std::min_element(solutions.begin(), solutions.end(),
+            [](const Solution& lhs, const Solution& rhs) {
+                return lhs.floorsRemaining < rhs.floorsRemaining ||
+                        (lhs.floorsRemaining == rhs.floorsRemaining &&
+                         lhs.time < rhs.time);
+            });
+    std::cerr << "Best solution: tm=" << solution.heuristics.timeMultiplier <<
+            " dsm=" << solution.heuristics.distanceSquareMultiplier <<
+            " srm=" << solution.heuristics.spreadRadiusMultiplier <<
+            " floors=" << solution.floorsRemaining <<
+            " time=" << solution.time << "\n";
+    const auto& commands = solution.commands;
     std::cout << commands.size() << "\n";
     for (const Command& command : commands) {
         std::cout << command.time << " " << command.type << " " <<

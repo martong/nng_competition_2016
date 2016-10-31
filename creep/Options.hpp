@@ -12,6 +12,9 @@ Finder parseFinder(const std::string& s);
 template<typename Function>
 void iterateFinder(const Finder& finder, const Function& function) {
     float difference = finder.end - finder.begin;
+    if (difference == 0.0f) {
+        difference = 1.0f;
+    }
     for (float value = finder.begin;
             value * difference <= finder.end * difference;
             value += finder.delta) {

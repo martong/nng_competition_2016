@@ -123,7 +123,6 @@ private:
         };
 
         int startTime = game.getStatus().getTime();
-        Game gameTmp = game;
         Matrix<HeuristicsData> heuristicsTable{
                 game.getStatus().getTable().width(),
                 game.getStatus().getTable().height()};
@@ -135,25 +134,26 @@ private:
         auto spreadPoints = getSpreadArea(game.getStatus().getTable(),
                 tumor.position, rules::creepSpreadRadius,
                 notPendingPredicate(isFloor));
-        while (game.canContinue()) {
-            tick();
+        Game gameTmp = game;
+        while (gameTmp.canContinue()) {
+            gameTmp.tick();
             std::vector<Point> newSpreadPoints;
             for (Point p : spreadPoints) {
-                if (game.getStatus().getTable()[p] == MapElement::Creep) {
-                    heuristicsTable[p].time = game.getStatus().getTime();
-                } else if (game.getStatus().getTable()[p] ==
+                if (gameTmp.getStatus().getTable()[p] == MapElement::Creep) {
+                    heuristicsTable[p].time = gameTmp.getStatus().getTime();
+                } else if (gameTmp.getStatus().getTable()[p] ==
                         MapElement::Floor) {
                     newSpreadPoints.push_back(p);
                 }
             }
             spreadPoints = newSpreadPoints;
         }
-        for (Point p : getSpreadArea(game.getStatus().getTable(),
+        for (Point p : getSpreadArea(gameTmp.getStatus().getTable(),
                 tumor.position, rules::creepSpreadRadius, isCreep)) {
-            float newSpreadSize = getSpreadArea(game.getStatus().getTable(), p,
+            float newSpreadSize = getSpreadArea(gameTmp.getStatus().getTable(), p,
                     rules::creepSpreadRadius, isFloor).size();
             float distanceValue = 0.0f;
-            for (const Tumor& tumor : game.getStatus().getTumors()) {
+            for (const Tumor& tumor : gameTmp.getStatus().getTumors()) {
                 distanceValue += heuristics.distanceSquareMultiplier /
                         distanceSquare(p, tumor.position);
             }
@@ -167,7 +167,6 @@ private:
                     (heuristicsTable[p].time - startTime + 1) *
                     heuristics.timeMultiplier;
         }
-        game = gameTmp;
         //dumpMatrix(LOG, game.getStatus().getTable());
         //dumpMatrix(LOG, heuristicsTable, "", 0,
                 //[](const HeuristicsData& data) {
@@ -264,11 +263,15 @@ private:
 } // unnamed namespace
 
 Solution findSolution(Game game, const Heuristics& heuristics) {
+    LOG << "Solve: tm=" << heuristics.timeMultiplier <<
+            " dsm=" << heuristics.distanceSquareMultiplier <<
+            " srm=" << heuristics.spreadRadiusMultiplier << "\n";
     Solution result;
     SolverImpl impl{game, heuristics};
     result.commands = impl.solve();
     result.time = game.getStatus().getTime();
     result.floorsRemaining = game.getStatus().getFloorsRemaining();
+    result.heuristics = heuristics;
     LOG << "Solution: tm=" << heuristics.timeMultiplier <<
             " dsm=" << heuristics.distanceSquareMultiplier <<
             " srm=" << heuristics.spreadRadiusMultiplier <<

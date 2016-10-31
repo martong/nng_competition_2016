@@ -12,6 +12,7 @@ struct Heuristics {
 
 struct Solution {
     std::vector<Command> commands;
+    Heuristics heuristics;
     int floorsRemaining;
     int time;
 };
