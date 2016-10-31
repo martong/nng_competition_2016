@@ -28,6 +28,7 @@ struct Options {
     Finder timeMultiplierFinder;
     Finder distanceSquareMultiplierFinder;
     Finder spreadRadiusMultiplierFinder;
+    std::size_t numThreads = 1;
 };
 
 Options parseOptions(int argc, const char* argv[]);

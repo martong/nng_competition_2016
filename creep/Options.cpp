@@ -41,6 +41,7 @@ Options parseOptions(int argc, const char* argv[]) {
     po::options_description options;
     options.add_options()
             ("help,h", "Help")
+            ("jobs,j", defaultValue(result.numThreads), "Number of threads")
             ("type,t", po::value(&result.type), "simulate or solve")
             ("map,m", po::value(&result.inputFileName), "The input file name")
             ("distance-square-multiplier",

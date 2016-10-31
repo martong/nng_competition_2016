@@ -15,4 +15,4 @@ COMPILE_TUP = $(TUP_CWD)/compile.tup
 LINK_TUP = $(TUP_CWD)/link.tup
 TEST_TUP = $(TUP_CWD)/test.tup
 UTIL_DIR = $(TUP_CWD)/util
-CPP_UTIL_DIR = $(TUP_CWD)/cpp-util/include
+CPP_UTIL_DIR = $(TUP_CWD)/cpp-util

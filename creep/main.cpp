@@ -3,6 +3,7 @@
 #include "Solver.hpp"
 
 #include <util/PrefixMap.hpp>
+#include <util/ThreadPool.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -23,21 +24,44 @@ void simulate(Game& game, const Options&) {
     }
 }
 
+template<typename OnFinished>
+void doSolve(const Game& game, const Heuristics& heuristics,
+        const OnFinished& onFinished) {
+    auto solution = findSolution(game, heuristics);
+    onFinished(solution);
+}
+
 void solve(Game& game, const Options& options) {
     std::vector<Solution> solutions;
+    util::ThreadPool threadPool{options.numThreads};
+    boost::asio::io_service& ioService = threadPool.getIoService();
+    boost::asio::strand strand{ioService};
+    auto onFinished =
+            [&solutions, &ioService, &strand](const Solution& solution) {
+                ioService.post(strand.wrap(
+                        [&solutions, solution]() {
+                            solutions.push_back(solution);
+                        }));
+            };
+    threadPool.start();
     iterateFinder(options.timeMultiplierFinder,
             [&](float timeMultiplier) {
                 iterateFinder(options.distanceSquareMultiplierFinder,
                         [&](float distanceSquareMultiplier) {
                             iterateFinder(options.spreadRadiusMultiplierFinder,
                                     [&](float spreadRadiusMultiplier) {
-                                        solutions.push_back(findSolution(game, {
-                                                timeMultiplier,
-                                                distanceSquareMultiplier,
-                                                spreadRadiusMultiplier}));
+                                        ioService.post(
+                                                [=, &game, &onFinished]() {
+                                                    doSolve(game, {
+                                                    timeMultiplier,
+                                                    distanceSquareMultiplier,
+                                                    spreadRadiusMultiplier},
+                                                    onFinished);
+                                                });
                                     });
                         });
             });
+    threadPool.wait();
     if (solutions.empty()) {
         std::cerr << "There was no simulations.\n";
         return;
