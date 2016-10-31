@@ -1,0 +1,43 @@
+Macska
+2016. okt. 25. 09:38
+Kedves Guru!
+
+Kérlek segíts nekem egyszerű macskának. A gazdám mostanában elég furcsán viselkedik. Először is eszkábált egy dobozt, amibe valami méregfiolát rakott. Aztán az internetről rendelt egy csomó golyót, amelyeknek egy része radioaktív. Akkor kezdtem igazán gyanakodni, amikor a kedvenc plüss egeremet is belekészítette a dobozba. Attól tartok, hogy valami nagy disznóságra készül. Erről sikerült is meggyőződnöm, amikor belepillantottam a jegyzeteibe. A lényeg, hogy ha egy radioaktív golyóval együtt zár be a dobozba, akkor előbb utóbb meghalok, és addig is élőhalott leszek.
+
+Sajnos a közhiedelemmel ellentétben nekünk macskáknak is pontosan egy életünk van és én még ragaszkodnék az enyémhez. Szóval azt találtam ki, hogy amíg néha-néha kimegy a szobából pár percre, kidobálom a radioaktív golyókat és csak a simákat hagyom meg. Már el is csentem az asztaláról egy Geiger-Müller számlálót és elrejtettem a fonal gombolyagom alá. Így amikor kimegy, meg tudom mérni egy kupac golyónak a sugárzását. Ez megmutatja bármekkora kupacból, hogy van-e benne radioaktív, de az sajnos nem derül ki, hogy melyek azok. Azt a rendelési összesítőn mindig látom, hogy hány darab radioaktív golyó van, de ez még mindig kevés, hogy megtaláljam melyek azok. Minden egyes távozáskor egyetlen mérést tudok megcsinálni, és minél tovább húzom a dolgot annál valószínűbb, hogy a dobozban végzem.
+
+Annyit tudok még mondani, hogy a legnagyobb rendelt csomagban 64 darab golyó van, és a legtöbb radioaktív golyó, amit egy kupacban láttam az 7 volt.
+
+Kérlek segíts rajtam én csak egy egyszerű macska vagyok és nem értek az ilyen bonyolult dolgokhoz, egy realtime ray tracer programot is alig tudok összerakni.
+
+Üdv,
+
+Schrödinger Macskája
+
+
+Guru
+2016. okt. 25. 10:12
+Üdv Macska!
+
+Küldök neked egy programot, aminek ha megmondod, hogy hány golyót vizsgálsz és abból hány radioaktív, akkor szépen sorban kiírja neked, hogy milyen kupacokba rendezd a golyókat az egyes mérésekhez. Minden mérésnél neked kell megadnod, hogy az eredmény pozitív (volt radioaktív golyó a kupacban) vagy negatív volt.
+
+Az általam küldött programban az alábbi függvény lesz definiálva:
+std::vector<size_t> FindRadioactiveBalls(size_t NumberOfBalls, size_t RadioactiveBalls, bool (*TestFunction)(const std::vector<size_t>& BallsToTest);
+
+
+A golyókat mindig 0-tól fogja számozni. Tehát ha 5 golyó van, akkor ezekre 0-tól 4-ig fog hivatkozni. Ehhez kell majd neked írnod némi körítést, hogy használni tudd, de talán megbirkózol majd vele.
+
+Béke veled,
+
+Guru
+
+
+Macska
+2016. okt. 25. 12:23
+Köszönöm Guru!
+
+A program többi része miatt ne aggódj azokat megírom én, csak a függvényed (és a segédfüggvényeid) működjenek hibátlanul. A lényeg, hogy minél kevesebbszer hívja meg a programod a TestFunction-t, mire az összes kupaccal végzek.
+
+Üdv,
+
+Macska
