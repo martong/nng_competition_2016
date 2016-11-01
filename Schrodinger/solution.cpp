@@ -1,6 +1,7 @@
 #include <vector>
 #include <numeric>
 #include <cassert>
+#include <cmath>
 
 using V = std::vector<size_t>;
 using TestFun = bool (*)(const std::vector<size_t>& BallsToTest);
@@ -39,9 +40,7 @@ struct TestFunW {
 
 void RlogN_impl(size_t low, size_t high, V& res, TestFunW& testFunW) {
     if (low == high) {
-        //if (testFunW(range(low, low))) {
-            res.push_back(low);
-        //}
+        res.push_back(low);
         return;
     }
     if (testFunW(range(low, (low + high) / 2))) {
@@ -74,8 +73,12 @@ std::vector<size_t> FindRadioactiveBalls(
         return {};
     }
 
-    // return linear(NumberOfBalls, RadioactiveBalls, TestFunction);
-    return RlogN(NumberOfBalls, RadioactiveBalls, TestFunction);
+    if (NumberOfBalls < RadioactiveBalls * log2(NumberOfBalls)) {
+        return linear(NumberOfBalls, RadioactiveBalls, TestFunction);
+    }
+    else {
+        return RlogN(NumberOfBalls, RadioactiveBalls, TestFunction);
+    }
 }
 
 V impl(size_t low, size_t high, size_t& num_ractive, TestFun testFun) {

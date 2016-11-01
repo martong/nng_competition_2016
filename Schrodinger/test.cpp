@@ -110,3 +110,62 @@ TEST_F(Result, SizeFour3) {
     std::sort(res.begin(), res.end());
     EXPECT_EQ(res, radioactives);
 }
+
+TEST_F(Result, SizeEight) {
+    V balls = range(0, 7);
+    radioactives = {0, 4};
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    std::sort(res.begin(), res.end());
+    EXPECT_EQ(res, radioactives);
+}
+
+TEST_F(Result, SizeEight1) {
+    V balls = range(0, 7);
+    radioactives = {3};
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    std::sort(res.begin(), res.end());
+    EXPECT_EQ(res, radioactives);
+    EXPECT_EQ(called, 3);
+}
+TEST_F(Result, SizeEight2) {
+    V balls = range(0, 7);
+    radioactives = {0, 7};
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    std::sort(res.begin(), res.end());
+    EXPECT_EQ(res, radioactives);
+    EXPECT_EQ(called, 6);
+}
+TEST_F(Result, SizeEight3) {
+    V balls = range(0, 7);
+    radioactives = {0,2,4};
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    std::sort(res.begin(), res.end());
+    EXPECT_EQ(res, radioactives);
+    EXPECT_EQ(called, 8);
+}
+TEST_F(Result, SizeEight4) {
+    V balls = range(0, 7);
+    radioactives = {0,2,4,6};
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    std::sort(res.begin(), res.end());
+    EXPECT_EQ(res, radioactives);
+    EXPECT_EQ(called, 8);
+}
+
+TEST_F(Result, Size7) {
+    V balls = range(0, 6);
+    radioactives = {0,2,4,6};
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    std::sort(res.begin(), res.end());
+    EXPECT_EQ(res, radioactives);
+    EXPECT_EQ(called, 7);
+}
+TEST_F(Result, Size9) {
+    V balls = range(0, 8);
+    radioactives = {0,2,4,6};
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    std::sort(res.begin(), res.end());
+    EXPECT_EQ(res, radioactives);
+    EXPECT_EQ(called, 9);
+}
+
