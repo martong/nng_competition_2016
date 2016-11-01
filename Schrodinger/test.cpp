@@ -1,12 +1,15 @@
+#include <iostream>
 #include <gtest/gtest.h>
 #include "solution.hpp"
 
 using V = std::vector<size_t>;
 
 V radioactives;
+static int called = 0;
 
 /// Returns true if there is at least one radioactive ball in the set
 bool testFun(const V& ballsToTest) {
+    ++called;
     for (const auto& b: ballsToTest) {
         auto it = std::find(radioactives.begin(), radioactives.end(), b);
         if (it != std::end(radioactives)) {
@@ -16,7 +19,16 @@ bool testFun(const V& ballsToTest) {
     return false;
 }
 
-TEST(Result, AllRadioactive) {
+struct Result : ::testing::Test {
+    Result() {
+        called = 0;
+    }
+    ~Result() {
+        std::cout << "TestFun called " << called << " times." << std::endl;
+    }
+};
+
+TEST_F(Result, AllRadioactive) {
     V balls = {0, 1, 2, 3};
     radioactives = {0, 1, 2, 3};
     auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
@@ -24,7 +36,7 @@ TEST(Result, AllRadioactive) {
     EXPECT_EQ(res, radioactives);
 }
 
-TEST(Result, ZeroRadioactive) {
+TEST_F(Result, ZeroRadioactive) {
     V balls = {0, 1, 2, 3};
     radioactives = {};
     auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
@@ -41,28 +53,34 @@ TEST(Range, range) {
     EXPECT_EQ(v, exp);
 }
 
-TEST(Result, SizeFour) {
+TEST_F(Result, SizeFour) {
     V balls = {0, 1, 2, 3};
     radioactives = {0, 3};
     auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
     std::sort(res.begin(), res.end());
     EXPECT_EQ(res, radioactives);
+}
 
-    balls = {0, 1, 2, 3};
+TEST_F(Result, SizeFour1) {
+    V balls = {0, 1, 2, 3};
     radioactives = {1, 2};
-    res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
     std::sort(res.begin(), res.end());
     EXPECT_EQ(res, radioactives);
+}
 
-    balls = {0, 1, 2, 3};
+TEST_F(Result, SizeFour2) {
+    V balls = {0, 1, 2, 3};
     radioactives = {1};
-    res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
     std::sort(res.begin(), res.end());
     EXPECT_EQ(res, radioactives);
+}
 
-    balls = {0, 1, 2, 3};
+TEST_F(Result, SizeFour3) {
+    V balls = {0, 1, 2, 3};
     radioactives = {0, 1, 3};
-    res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
+    auto res = FindRadioactiveBalls(balls.size(), radioactives.size(), testFun);
     std::sort(res.begin(), res.end());
     EXPECT_EQ(res, radioactives);
 }
