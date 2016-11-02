@@ -75,29 +75,25 @@ Number operator/(Number lhs, const T& rhs) {
     return lhs /= rhs;
 }
 
-mpq_rational getLimit(const mpq_rational r) {
-    return mpq_rational{1} / denominator(r);
-}
-
-template<typename T>
-T getLimit(const T&) { return 1; }
-
-template<typename T>
-T nTimesSqrt2(const T& n) {
-    T nSquare = n * n;
-    T min = n;
-    T max = n * 2;
-    T limit = getLimit(n);
-    while (max - min > limit) {
-        T mean = (min + max) / 2;
+mpz_int nTimesSqrt2(const mpz_int& n) {
+    mpz_int nSquare = n * n;
+    mpz_int min = n;
+    mpz_int max = n * 2;
+    while (abs(max - min) > 1) {
+        mpz_int mean = (min + max) / 2;
         if (mean * mean / nSquare < 2) {
             min = mean;
         } else {
             max = mean;
         }
     }
-    std::cerr << "[Limit: " << limit << " Error: " << max - min << "]";
-    return min;
+    //std::cerr << "[" << n << "*√2=" << min << " Error: " << max - min << "]";
+    return std::min(min, max);
+}
+
+mpq_rational nTimesSqrt2(const mpq_rational& n) {
+    mpz_int d = denominator(n);
+    return nTimesSqrt2(mpz_int{numerator(n) * d}) / d / d;
 }
 
 mpz_int approximate(const Number& number) {
@@ -150,7 +146,7 @@ mpz_int calculate(const Number& side, int depth = 0, int branch = 0) {
     Number b = multiplyWithSqrt2(side) - y;
     Number a = multiplyWithSqrt2(b) / mpq_rational{2};
     std::cerr << branch << ": side=" << side << " x=" << x << " y=" << y << " b=" << b << " a=" << a << "\n";
-    return x * y + calculate(side - x, depth + 1, 1) + calculate(a, depth + 1, 2);
+    return x * y + calculate(side - x, depth + 1, 1) + calculate(a, depth + 1, 2) - 1;
 }
 
 mpz_int tenPower(mpz_int n) {
