@@ -123,7 +123,7 @@ mpz_int calculateExact(const Number& side) {
     } else {
         for (mpz_int i = 0; i <= sideApprox; ++i) {
             Number height = multiplyWithSqrt2(side - i);
-            std::cerr << i << " -> " << height << "\n";
+            //std::cerr << i << " -> " << height << "\n";
             result += approximate(height);
         }
     }
@@ -135,13 +135,13 @@ mpz_int calculate(const Number& side, int depth = 0, int branch = 0) {
     for (int i = 0; i < depth; ++i) {
         std::cerr << " ";
     }
-    if (side.a + side.b < 10) {
+    mpz_int x = approximate(side) / 2;
+    if (x == 0) {
         std::cerr << branch << ": side=" << side << " --> calculating exact: ";
         mpz_int result = calculateExact(side);
         std::cerr << result << "\n";
         return result;
     }
-    mpz_int x = approximate(side) / 2;
     mpz_int y = nTimesSqrt2(x);
     Number b = multiplyWithSqrt2(side) - y;
     Number a = multiplyWithSqrt2(b) / mpq_rational{2};
