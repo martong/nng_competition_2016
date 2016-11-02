@@ -87,7 +87,6 @@ mpz_int nTimesSqrt2(const mpz_int& n) {
             max = mean;
         }
     }
-    //std::cerr << "[" << n << "*√2=" << min << " Error: " << max - min << "]";
     return std::min(min, max);
 }
 
@@ -116,17 +115,10 @@ Number multiplyWithSqrt2(const Number& number) {
 mpz_int calculateExact(const Number& side) {
     mpz_int sideApprox = approximate(side);
     mpz_int result = sideApprox + 1;
-    //if (side.b == 0) {
-        //for (mpz_int i = 1; i <= sideApprox; ++i) {
-            //result += nTimesSqrt2(i);
-        //}
-    //} else {
-        for (mpz_int i = 0; i <= sideApprox; ++i) {
-            Number height = multiplyWithSqrt2(side - i);
-            //std::cerr << i << " -> " << height << "\n";
-            result += approximate(height);
-        }
-    //}
+    for (mpz_int i = 0; i <= sideApprox; ++i) {
+        Number height = multiplyWithSqrt2(side - i);
+        result += approximate(height);
+    }
 
     return result;
 }
@@ -137,32 +129,15 @@ void printSpaces(int depth) {
     }
 }
 
-mpz_int calculate(const Number& side, int depth = 0, int branch = 0) {
-    //printSpaces(depth);
+mpz_int calculate(const Number& side) {
     mpz_int x = approximate(side) / 2;
     if (x < 10) {
-        //std::cerr << branch << ": side=" << side << " --> calculating exact: ";
         mpz_int result = calculateExact(side);
-        //std::cerr << result << "\n";
         return result;
     }
     mpz_int y = nTimesSqrt2(x);
-    Number a = side - x;
-    //Number b = multiplyWithSqrt2(a);
-    Number bb = multiplyWithSqrt2(side) - y;
-    Number aa = multiplyWithSqrt2(bb) / mpq_rational{2};
-    Number aaa = aa - x;
-    //Number bbb = b - y;
-    //std::cerr << branch << ": side=" << side << " x=" << x << " y=" << y << "\n";
-    mpz_int xy = x * y;
-    int d2 = depth + 1;
-    mpz_int branch1 = calculate(a, d2, 1);
-    mpz_int branch2 = calculate(aa, d2, 2);
-    mpz_int branch3 = calculate(aaa, d2, 3);
-    mpz_int result = xy + branch1 + branch2 - branch3;
-    //printSpaces(depth);
-    //std::cerr << branch << ": side=" << side << " " << xy << " + " << branch1 << " + " << branch2 << " - " << branch3 << " = " << result << "\n";
-    return result;
+    Number aa = side - Number{0, y} / mpq_rational{2};
+    return x * y + calculate(side - x) + calculate(aa) - calculate(aa - x);
 }
 
 mpz_int tenPower(mpz_int n) {
