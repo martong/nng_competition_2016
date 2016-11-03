@@ -2,6 +2,7 @@
 
 #include "Constants.hpp"
 #include "Creep.hpp"
+#include "Log.hpp"
 
 #include <algorithm>
 #include <assert.h>
@@ -115,5 +116,8 @@ const Tumor& Status::addTumor(Point position) {
     assert(table[position] == MapElement::Creep);
     tumors.emplace_back(nextId++, position, rules::tumorCooldownTime);
     table[position] = MapElement::TumorCooldown;
-    return tumors.back();
+    const Tumor& result = tumors.back();
+    LOG << "Adding tumor. time=" << time << " id=" << result.id <<
+            " position=" << result.position << "\n";
+    return result;
 }

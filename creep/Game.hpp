@@ -46,6 +46,10 @@ public:
         calculateNextCommand();
     }
 
+    void setStatus(Status status) {
+        this->status = std::move(status);
+    }
+
     void removeCommand(const Command& command);
     void removeCommands(Commands::const_iterator from,
             Commands::const_iterator to);
