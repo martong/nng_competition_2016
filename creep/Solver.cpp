@@ -19,20 +19,17 @@ struct Finished {};
 
 class SolverImpl {
 public:
-    SolverImpl(Game& game, const Heuristics& heuristics) :
-            game(game), heuristics(heuristics) {
+    SolverImpl(Game& game, const Heuristics& heuristics,
+            std::shared_ptr<Node> startingNode) :
+            game(game), currentNode(std::move(startingNode)),
+            heuristics(heuristics) {
     }
 
-    std::vector<Command> solve() {
+    std::shared_ptr<Node> solve() {
         addQueenAction(game.getStatus().getQueens()[0]);
         game.tick();
         doSolve();
-        std::vector<Command> result;
-        result.reserve(game.getCommands().size());
-        for (const auto& element : game.getCommands()) {
-            result.push_back(element.second);
-        }
-        return result;
+        return currentNode;
     }
 
 private:
@@ -204,6 +201,11 @@ private:
     }
 
     void tick() {
+        auto it = game.getCommands().find(game.getStatus().getTime());
+        if (it != game.getCommands().end()) {
+            currentNode = std::make_shared<Node>(it->second, game.getStatus(),
+                    currentNode);
+        }
         game.tick();
         if (game.getStatus().getFloorsRemaining() == 0) {
             throw Finished{};
@@ -264,6 +266,7 @@ private:
     }
 
     Game& game;
+    std::shared_ptr<Node> currentNode;
     const Heuristics heuristics;
     boost::container::flat_set<int> pendingTumors;
     boost::container::flat_set<Point> pendingPositions;
@@ -271,13 +274,14 @@ private:
 
 } // unnamed namespace
 
-Solution findSolution(Game game, const Heuristics& heuristics) {
+Solution findSolution(Game game, const Heuristics& heuristics,
+        std::shared_ptr<Node> startingNode) {
     LOG << "Solve: tm=" << heuristics.timeMultiplier <<
             " dsm=" << heuristics.distanceSquareMultiplier <<
             " srm=" << heuristics.spreadRadiusMultiplier << "\n";
     Solution result;
-    SolverImpl impl{game, heuristics};
-    result.commands = impl.solve();
+    SolverImpl impl{game, heuristics, std::move(startingNode)};
+    result.node = impl.solve();
     result.time = game.getStatus().getTime();
     result.floorsRemaining = game.getStatus().getFloorsRemaining();
     result.heuristics = heuristics;

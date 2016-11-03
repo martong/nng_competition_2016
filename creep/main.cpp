@@ -77,7 +77,7 @@ void solve(Game& game, const Options& options) {
             " srm=" << solution.heuristics.spreadRadiusMultiplier <<
             " floors=" << solution.floorsRemaining <<
             " time=" << solution.time << "\n";
-    const auto& commands = solution.commands;
+    auto commands = getCommands(solution.node);
     std::cout << commands.size() << "\n";
     for (const Command& command : commands) {
         std::cout << command.time << " " << command.type << " " <<

@@ -1,8 +1,9 @@
 #ifndef CREEP_SOLVER_HPP
 #define CREEP_SOLVER_HPP
 
-#include "Game.hpp"
 #include "Command.hpp"
+#include "Game.hpp"
+#include "Node.hpp"
 
 struct Heuristics {
     float timeMultiplier;
@@ -11,12 +12,13 @@ struct Heuristics {
 };
 
 struct Solution {
-    std::vector<Command> commands;
+    std::shared_ptr<Node> node;
     Heuristics heuristics;
     int floorsRemaining;
     int time;
 };
 
-Solution findSolution(Game game, const Heuristics& heuristics);
+Solution findSolution(Game game, const Heuristics& heuristics,
+        std::shared_ptr<Node> startingNode = nullptr);
 
 #endif // CREEP_SOLVER_HPP
