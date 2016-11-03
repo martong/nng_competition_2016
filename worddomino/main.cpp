@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -99,8 +98,8 @@ std::vector<Match> matchWords(const std::vector<std::string>& words,
         }
 
         std::cerr << "number of words: " << words.size() << std::endl;
-        std::cerr << "number of words used: " << wordsAssigned.size()
-                  << " number of words used but without match: "
+        std::cerr << "number of words assigned: " << wordsAssigned.size()
+                  << " number of words assigned but with no continuing word: "
                   << i << std::endl;
         std::cerr << "number of words without match: "
                   << wordsWithoutMatch.size() << std::endl;
@@ -147,25 +146,34 @@ void validateMatches(const std::vector<std::string>& words,
     }
 }
 
-//std::vector<Match> generateWordChain(const std::vector<Match>& matches) {
-//    std::vector<Match> wordChain;
-//    // firstWord number 1 is the [0] element folloed by 2, 3, ...
-//    // in linear order after sort
-//    std::sort(matches.begin(), matches.end());
-//    std::unordered_set<int> matchesUsed;
-//
-//    auto m = matches.begin();
-//    matchesUsed.insert(m.firstWord);
-//    while (matchesUsed.size() < matches.size()) {
-//        wordChain.push_back(*m);
-//        m = matches.begin();
-//        std::advance(m, m.secondWord);
-//        //m = matches[m->secondWord];
-//        matchesUsed.insert(m.firstWord);
-//    }
-//
-//    return wordChain;
-//}
+std::vector<Match> generateWordChain(const std::vector<Match>& matches,
+        int numberOfWords) {
+    std::vector<Match> wordChain;
+    std::vector<int> indices(numberOfWords, -1);
+    for (std::size_t i = 0; i < matches.size(); ++i) {
+        indices[matches[i].firstWord] = i;
+    }
+
+    //std::sort(matches.begin(), matches.end());
+    std::unordered_set<int> matchesUnused;
+    for (std::size_t i = 0; i < matches.size(); ++i) {
+        matchesUnused.insert(matches[i].firstWord);
+    }
+
+
+    int word = *matchesUnused.begin();
+    while (!matchesUnused.empty()) {
+        matchesUnused.erase(word);
+        assert(indices[word] != -1);
+        wordChain.push_back(matches[indices[word]]);
+        word = matches[indices[word]].secondWord;
+        if (matchesUnused.count(word) == 0 && !matchesUnused.empty()) {
+            word = *matchesUnused.begin();
+        }
+    }
+
+    return wordChain;
+}
 
 int main(int argc, char* argv[]) {
 
@@ -177,10 +185,23 @@ int main(int argc, char* argv[]) {
     const std::vector<std::string> words = readWords(std::cin);
     std::vector<Match> matches = matchWords(words, verbose);
     validateMatches(words, matches);
-    //std::vector<Match> wordChain = generateWordChain(matches);
-    //auto wordChainIterator = wordChain.begin();
-    //std::cout << words[wordChainIterator->firstWord];
-    //for (; wordChainIterator != wordChain.end(); ++wordChainIterator) {
-    //    std::cout << words[elem.secondWord].substr(elem.matchSize);
-    //}
+    std::vector<Match> wordChain = generateWordChain(matches, words.size());
+    std::unordered_set<std::string> unusedWords{words.begin(), words.end()};
+    for (const auto& match : matches) {
+        unusedWords.erase(words[match.firstWord]);
+        unusedWords.erase(words[match.secondWord]);
+    }
+
+    std::cerr << "Unused words: " << unusedWords.size() << std::endl;
+
+    auto wordChainIterator = wordChain.begin();
+    std::cout << words[wordChainIterator->firstWord];
+    for (; wordChainIterator != wordChain.end(); ++wordChainIterator) {
+        std::cout << words[wordChainIterator->secondWord].substr(wordChainIterator->matchSize);
+    }
+
+    for (const auto& word : unusedWords) {
+        std::cout << word;
+    }
+    std::cout << std::endl;
 }
