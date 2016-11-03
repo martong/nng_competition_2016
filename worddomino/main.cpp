@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -25,17 +26,21 @@ struct Match {
               matchSize(matchSize) {
     }
 
+    bool operator<(const Match& rhs) {
+        return firstWord < rhs.firstWord;
+    }
+
     std::size_t firstWord;
     std::size_t secondWord;
     int matchSize;
 };
 
-int main() {
-    std::map<int, std::vector<Match>> matches;
-    const std::vector<std::string> words = readWords(std::cin);
+std::vector<Match> matchWords(const std::vector<std::string>& words,
+        bool verbose) {
+    std::vector<Match> matches;
     std::unordered_set<std::string> wordsWithoutMatch(words.begin(),
             words.end());
-    std::unordered_set<std::string> wordsUsed;
+    std::unordered_set<std::string> wordsAssigned;
 
     std::size_t wordLength = 64;
     while (!wordsWithoutMatch.empty() && wordLength > 0) {
@@ -58,12 +63,14 @@ int main() {
             while (matchIterator != words.end() &&
                     0 == matchIterator->find(wordFragment)) {
                 if (*matchIterator != word &&
-                        wordsUsed.count(*matchIterator) == 0) {
-                    matches[wordLength].emplace_back(
-                            std::distance(words.begin(), std::find(words.begin(), words.end(), word)),
-                            std::distance(words.begin(), matchIterator), wordLength);
+                        wordsAssigned.count(*matchIterator) == 0) {
+                    matches.emplace_back(
+                            std::distance(words.begin(), std::lower_bound(
+                                    words.begin(), words.end(), word)),
+                            std::distance(words.begin(), matchIterator),
+                            wordLength);
                     wordsFound.insert(word);
-                    wordsUsed.insert(*matchIterator);
+                    wordsAssigned.insert(*matchIterator);
                     break;
                 }
                 ++matchIterator;
@@ -75,109 +82,105 @@ int main() {
         --wordLength;
     }
     std::cerr << std::endl;
-    std::cout << "matches: " << std::endl;
-    for (const auto& matchCategory : matches) {
-        std::cout << "length: " << matchCategory.first << std::endl;
-        for (const auto& match : matchCategory.second) {
-            std::cout << words[match.firstWord] << ' ' << words[match.secondWord] << " size: "
+
+    if (verbose) {
+        std::cerr << "matches: " << std::endl;
+        for (const auto& match : matches) {
+            std::cerr << words[match.firstWord] << ' '
+                      << words[match.secondWord] << " size: "
                       << match.matchSize << std::endl;
         }
-    }
 
-    int i = 0;
-    for (const auto& wordNoMatch : wordsWithoutMatch) {
-        if (wordsUsed.count(wordNoMatch) > 0) {
-            ++i;
+        int i = 0;
+        for (const auto& wordNoMatch : wordsWithoutMatch) {
+            if (wordsAssigned.count(wordNoMatch) > 0) {
+                ++i;
+            }
+        }
+
+        std::cerr << "number of words: " << words.size() << std::endl;
+        std::cerr << "number of words used: " << wordsAssigned.size()
+                  << " number of words used but without match: "
+                  << i << std::endl;
+        std::cerr << "number of words without match: "
+                  << wordsWithoutMatch.size() << std::endl;
+
+        for (const auto& word : wordsWithoutMatch) {
+            std::cerr << word << std::endl;
         }
     }
 
+    //     for (const auto& w : wordsWithoutMatch) {
+    //         matches.emplace_back(std::distance(words.begin(), std::lower_bound(
+    //                 words.begin(), words.end(), w)), 0, 0);
+    //     }
 
-    std::cout << "number of words: " << words.size() << std::endl;
-    std::cout << "number of words used: " << wordsUsed.size()
-              << " number of words used but without match: " << i << std::endl;
-    std::cout << "number of words without match: " << wordsWithoutMatch.size()
-              << std::endl;
+    return matches;
+}
 
-    for (const auto& word : wordsWithoutMatch) {
-        std::cout << word << std::endl;
+void validateMatches(const std::vector<std::string>& words,
+        const std::vector<Match>& matches) {
+
+    std::vector<bool> prefixWordsUsed(words.size(), false);
+    std::vector<bool> suffixWordsUsed(words.size(), false);
+    for (const auto& match : matches) {
+        const std::string& firstWord = words[match.firstWord];
+        const std::string& secondWord = words[match.secondWord];
+        if (secondWord.substr(0, match.matchSize) !=
+                firstWord.substr(firstWord.size() - match.matchSize)) {
+            std::cerr << "validation failed for: " << firstWord
+                      << ' ' << secondWord <<  "size: " << match.matchSize
+                      << std::endl;
+        }
+
+        if (prefixWordsUsed[match.firstWord]) {
+            std::cerr << "prefix word used twice! "
+                      << firstWord << std::endl;
+        }
+        prefixWordsUsed[match.firstWord] = true;
+
+        if (suffixWordsUsed[match.secondWord]) {
+            std::cerr << "suffix word used tice! "
+                      << secondWord << std::endl;
+        }
+        suffixWordsUsed[match.secondWord] = true;
     }
 }
 
-// There are no duplicated among the words
-int main2() {
-    std::map<int, std::vector<Match>> matches;
+//std::vector<Match> generateWordChain(const std::vector<Match>& matches) {
+//    std::vector<Match> wordChain;
+//    // firstWord number 1 is the [0] element folloed by 2, 3, ...
+//    // in linear order after sort
+//    std::sort(matches.begin(), matches.end());
+//    std::unordered_set<int> matchesUsed;
+//
+//    auto m = matches.begin();
+//    matchesUsed.insert(m.firstWord);
+//    while (matchesUsed.size() < matches.size()) {
+//        wordChain.push_back(*m);
+//        m = matches.begin();
+//        std::advance(m, m.secondWord);
+//        //m = matches[m->secondWord];
+//        matchesUsed.insert(m.firstWord);
+//    }
+//
+//    return wordChain;
+//}
+
+int main(int argc, char* argv[]) {
+
+    bool verbose = false;
+    if (argc == 2 && std::string{argv[1]} == "-v") {
+        verbose = true;
+    }
+
     const std::vector<std::string> words = readWords(std::cin);
-    std::unordered_set<std::string> wordsWithoutMatch{words.begin(),
-            words.end()};
-    std::unordered_set<std::string> wordsUsed;
-
-    for (std::size_t firstWord = 0; firstWord < words.size(); ++firstWord) {
-        if (firstWord % 1000 == 0) {
-            std::cerr << '.';
-        }
-        auto wordIterator = words.begin();
-        std::advance(wordIterator, firstWord);
-        const std::string& word = *wordIterator;
-        for (std::size_t i = word.size(); i > 0; --i) {
-            std::string wordFragment = word.substr(word.size() - i);
-            auto predicate = [i](const std::string& elem,
-                    const std::string& value) {
-                return elem.substr(0, i) < value;
-                //if (0 == elem.find(value)) {
-                //    return false;
-                //}
-                //return elem < value;
-            };
-            auto matchIterator = std::lower_bound(words.begin(),
-                    words.end(), wordFragment, predicate);
-            //std::cerr << "match dist: "
-            //          << std::distance(words.begin(), matchIterator)
-            //          << " word: " << word
-            //          << " wordfrag: " << wordFragment << std::endl;
-            bool matchFound = false;
-            while(matchIterator != words.end() &&
-                    0 == matchIterator->find(wordFragment)) {
-                if (*matchIterator != word && wordsUsed.count(*matchIterator) == 0) {
-                    matches[i].emplace_back(firstWord,
-                            std::distance(words.begin(), matchIterator), i);
-                    wordsWithoutMatch.erase(word);
-                    wordsUsed.insert(*matchIterator);
-                    matchFound = true;
-                    break;
-                }
-                ++matchIterator;
-            }
-            if (matchFound) {
-                break;
-            }
-        }
-    }
-    std::cout << std::endl;
-
-    std::cout << "matches: " << std::endl;
-    for (const auto& matchCategory : matches) {
-        std::cout << "length: " << matchCategory.first << std::endl;
-        for (const auto& match : matchCategory.second) {
-            std::cout << match.firstWord << ' ' << match.secondWord << " size: "
-                      << match.matchSize << std::endl;
-        }
-    }
-
-    int i = 0;
-    for (const auto& wordNoMatch : wordsWithoutMatch) {
-        if (wordsUsed.count(wordNoMatch) > 0) {
-            ++i;
-        }
-    }
-
-    std::cout << "number of words: " << words.size() << std::endl;
-    std::cout << "number of words used: " << wordsUsed.size()
-              << " number of words used but without match: " << i << std::endl;
-    std::cout << "number of words without match: " << wordsWithoutMatch.size()
-              << std::endl;
-
-    for (const auto& word : wordsWithoutMatch) {
-        std::cout << word << std::endl;
-    }
-
+    std::vector<Match> matches = matchWords(words, verbose);
+    validateMatches(words, matches);
+    //std::vector<Match> wordChain = generateWordChain(matches);
+    //auto wordChainIterator = wordChain.begin();
+    //std::cout << words[wordChainIterator->firstWord];
+    //for (; wordChainIterator != wordChain.end(); ++wordChainIterator) {
+    //    std::cout << words[elem.secondWord].substr(elem.matchSize);
+    //}
 }
