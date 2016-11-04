@@ -194,9 +194,16 @@ int main(int argc, char* argv[]) {
 
     std::cerr << "Unused words: " << unusedWords.size() << std::endl;
 
+    int noconts = 0;
     auto wordChainIterator = wordChain.begin();
+    std::size_t previousWord = wordChainIterator->firstWord;
     std::cout << words[wordChainIterator->firstWord];
     for (; wordChainIterator != wordChain.end(); ++wordChainIterator) {
+        if (previousWord != wordChainIterator->firstWord) {
+            ++noconts;
+            std::cout << words[wordChainIterator->firstWord];
+        }
+        previousWord = wordChainIterator->secondWord;
         std::cout << words[wordChainIterator->secondWord].substr(wordChainIterator->matchSize);
     }
 
@@ -204,4 +211,6 @@ int main(int argc, char* argv[]) {
         std::cout << word;
     }
     std::cout << std::endl;
+
+    std::cerr << "The number of individual chains: " << noconts << std::endl;
 }
