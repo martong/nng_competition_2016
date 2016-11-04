@@ -1,0 +1,55 @@
+Spekuláns Sándor
+2016. okt. 25. 09:38
+Tisztelt Guru!
+
+Én egy lakótelepi panelházakra specializálódott ingatlantőzsde ügynök vagyok. Manapság egyre nagyobb a hajtás ezekre az egyen lakásokra az ingatlanpiacon. Főleg úgy, hogy egyre több és több lakótelepet vezetnek be a piacra. Különösen a külföldiek mennek nagyon jól. Már évek óta dolgozom lakótelepekkel és kiismertem a felépítésüket és a titkaikat.
+
+Képzeld el, hogy adott egy nagy üres terület, amire lakótelepet terveznek építeni. Ide felhúzzák az első házat. Minden ház négyzet alaprajzú és egységnyi méretű, és induláskor egy emelet magas. Aztán felhúznak valahova még egyet. Igen ám, de ha a szomszédos parcellán van ház, akkor az azt építő beruházók mindig ráhúznak egy emeletet a már meglévő épületükre. Kivéve akkor, ha már elérték a maximálisan megengedett 4 emelet magasságot. Mert ekkor lemondanak az épületről és a nagy részét széthordják építőanyagnak más építkezésekhez, és csak az eredeti 1 emelet marad meg.
+
+Tehát ez így néz ki a gyakorlatban:
+
+
+Tehát, ahogy épülnek a szomszédos házak úgy épülnek az újabb emeletek a már meglévő házakra. És amikor a negyedik szomszéd is megépül elbontják újra egy szintesre.
+
+
+Hogy miért is fontos ez? Azért, mert egy-egy újabb lakótelepi parcella (mindig téglalap alakú) kereskedésének megnyitásakor megkapjuk a teljes telep sematikus rajzát rajta a házakkal és a magasságukkal. Az épületek értékének megbecsüléséhez nagyon fontos a koruk. Azonban ennek a szabálynak az ismeretében már össze tudok állítani egy lehetséges építési sorrendet. Nem baj, ha nem pont az eredeti építési sorrendet sikerül összeraknom, ha az általam tippelt építési sorrend a sematikus ábrán kapott eredményt adja, akkor megfelel a becsléshez. A legfontosabb része úgyis, hogy megkülönböztessem a frissen megépített 1 emeletes házakat a visszabontott 1 emeletes romoktól.
+
+Azért fordulnék hozzád, mert ahhoz, hogy legjobb üzleteket megköthessem nagyon gyorsnak kell lennem, és sajnos a kézzel bogarászás már nem a leggyorsabb módja az adatfeldolgozásnak. Ahogy megnyitják a kereskedést egy új lakótelep parcellára 1 másodperc alatt elkapkodják a legjobb ajánlatokat. Ezért arra szeretnélek kérni, hogy írj nekem egy programot, aminek ha beküldöm a lakótelep sematikus ábráját 1 másodpercen belül visszaad egy lehetséges építési sorrendet. Ezt szeretném majd használni a különböző beérkező lakótelepek felmérésére. A lakótelepekről még annyit, hogy mindig teljesen be vannak építve, és feltűnt, hogy mintha úgy építették volna őket, hogy fogták az összes épület koordinátáját és jól összekeverték volna majd szépen egyesével megépítették ebben a sorrendben.
+
+Mivel egy kicsit konyítok a programozáshoz ezért a keretrendszert már összeraktam, neked csak ezt a függvényt kell implementálnod:
+void CalculateBuildOrder(const std::vector<std::vector<int>>& buildings, std::vector<std::pair<size_t, size_t>>& solution);
+
+
+Ahol a buildings egy sorokat tartalmazó vector. Egy sorban pedig a házak magasságát találod (1-4). A kimenet pedig solution vector, ami koordináta párokat tartalmaz (sor, oszlop) sorrendben. Tehát:
+
+solution[0].first az elsőnek épített ház ebben a sorban van (0 - buildings.size()-1)
+
+solution[0].second az elsőnek épített ház az oszlopban van (0 - buildings[0].size()-1) t
+
+Kérlek segíts, mert ha így megy tovább a hó végén nem fogom tudni megvenni a Bugatti Veyron, amit kinéztem. Pedig pont van pirosban.
+
+Előre is köszönöm!
+
+Spekuláns Sándor
+
+
+Guru
+2016. okt. 25. 10:21
+Kedves Sándor!
+
+Ne aggódj! Meglesz az autó. Küldöm a programot. Csak ezt az egy függvényt és a segédfüggvényeket/osztályokat, amiket használ fogja tartalmazni a fájl. Majd illeszd be a helyére és mehet a kereskedés.
+
+Béke veled,
+
+Guru
+
+
+Guru
+2016. okt. 25. 16:21
+Köszönöm Guru!
+
+Tényleg nagyon hálás vagyok. Az 1 másodperces limit nem fog változni, de tudd, hogy egyre nagyobb parcellákat nyitnak meg mostanában kereskedésre. Ezért fontos lenne, hogy a megadott időn belül minél nagyobb területet is ki tudjon értékelni. A legnagyobb amit láttam, hogy jönni fog 3300x3300 méretű volt.
+
+Üdv,
+
+Spekuláns Sándor
