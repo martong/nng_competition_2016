@@ -2,6 +2,8 @@
 #include <numeric>
 #include <cassert>
 #include <cmath>
+#include <algorithm>
+#include <stdio.h>
 
 using V = std::vector<size_t>;
 using TestFun = bool (*)(const std::vector<size_t>& BallsToTest);
