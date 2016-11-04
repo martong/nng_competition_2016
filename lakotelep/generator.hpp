@@ -4,8 +4,22 @@
 #include "Point.hpp"
 #include "Neighbors.hpp"
 
-Matrix<int> generate(int m, int n) {
+Matrix<int> build(int m, int n, const std::vector<Point>& ps) {
     Matrix<int> mx(m, n);
+    for (const auto p : ps) {
+        mx[p] = 1;
+
+        auto ns = getNeigbors(mx, p);
+        for (const auto n : ns) {
+            auto& v = mx[n];
+            if (v >= 1) ++v;
+            if (v > 4) v = 1;
+        }
+    }
+    return mx;
+}
+
+Matrix<int> generate(int m, int n) {
     //std::vector<std::vector<int>> result;
 
     std::vector<Point> ps;
@@ -19,17 +33,9 @@ Matrix<int> generate(int m, int n) {
     std::mt19937 g(rd());
     std::shuffle(ps.begin(), ps.end(), g);
 
-    for (const auto p : ps) {
-        mx[p] = 1;
-
-        auto ns = getNeigbors(mx, p);
-        for (const auto n : ns) {
-            auto& v = mx[n];
-            if (v >= 1) ++v;
-            if (v > 4) v = 1;
-        }
-    }
-
-    return mx;
+    return build(m, n, ps);
 }
 
+bool check(const std::vector<Point>& ps, const Matrix<int>& expected) {
+    return build(expected.width(), expected.height(), ps) == expected;
+}

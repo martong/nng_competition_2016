@@ -42,7 +42,7 @@ void serialize(Archive& ar, Point& p, const unsigned int /*version*/) {
     ar & p.y;
 }
 
-constexpr Point p10{1, 0}, p01{0, 1}, p11{1, 1};
+constexpr Point p00 {0,0}, p10{1, 0}, p01{0, 1}, p11{1, 1};
 
 inline constexpr bool operator==(Point p1, Point p2) {
     return p1.x == p2.x && p1.y == p2.y;
