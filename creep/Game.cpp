@@ -1,7 +1,5 @@
 #include "Game.hpp"
 
-#include "Creep.hpp"
-
 #include <boost/range/iterator_range.hpp>
 
 Game::Game(std::istream& stream) {
@@ -78,7 +76,7 @@ void Game::print(std::ostream& stream) {
     } else {
         stream << "No more commands.\n";
     }
-    stream << status.getTable();
+    //stream << status.getTable();
 }
 
 bool Game::canContinue() const {

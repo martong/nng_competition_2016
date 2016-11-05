@@ -2,34 +2,27 @@
 #define CREEP_TABLE_HPP
 
 #include <Matrix.hpp>
-#include <MatrixIO.hpp>
 
-#include <istream>
-#include <ostream>
-
-enum class MapElement : char {
-    Wall = '#', Floor = '.', Creep = 'C', Hatchery = 'H',
-    TumorCooldown = 'T', TumorActive = 'A', TumorInactive = '*',
-};
-
-inline
-std::string to_string(MapElement mapElement) {
-    return std::string{static_cast<char>(mapElement)};
+namespace MapElement {
+    constexpr int Floor = -1;
+    constexpr int Wall = -2;
+    constexpr int Building = -3;
 }
 
-inline
-std::istream& operator>>(std::istream& is, MapElement& mapElement) {
-    char c;
-    is.get(c);
-    mapElement = static_cast<MapElement>(c);
-    return is;
+// >= 0: creep at time T
+//  < 0: value of MapElement
+using Table = Matrix<int>;
+
+inline bool isInsideCircle(Point p, int radius) {
+    // magic
+    int dx_q1=2*p.x+(0<p.x?1:-1);
+    int dy_q1=2*p.y+(0<p.y?1:-1);
+    int d2_q2=dx_q1*dx_q1+dy_q1*dy_q1;
+    return d2_q2<=radius*radius*4;
 }
 
-inline
-std::ostream& operator<<(std::ostream& os, MapElement mapElement) {
-    return os << static_cast<char>(mapElement);
+inline bool hasCreep(int element) {
+    return element != MapElement::Wall && element != MapElement::Floor;
 }
-
-using Table = Matrix<MapElement>;
 
 #endif // CREEP_TABLE_HPP

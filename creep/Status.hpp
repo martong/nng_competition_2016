@@ -38,12 +38,46 @@ public:
     const Tumor& addTumorFromQueen(int id, Point position);
     const Tumor& addTumorFromTumor(int id, Point position);
 
+    std::size_t width() const { return table.width(); }
+    std::size_t height() const { return table.width(); }
+    int creepTime(Point p) const { return table[p]; }
+    bool isFloor(Point p) const {
+        return table[p] == MapElement::Floor || table[p] > time;
+    }
+    bool isBuilding(Point p) const { return table[p] == MapElement::Building; }
+    bool isWall(Point p) const { return table[p] == MapElement::Wall; }
+    bool isCreepAt(Point p, int t) const {
+        return table[p] >= 0 && table[p] <= t;
+    }
+    bool isCreep(Point p) const { return isCreepAt(p, time); }
+    bool isCreepCandidate(Point p) const {
+        return table[p] == MapElement::Floor && (
+               hasCreep(table[p - p10]) || hasCreep(table[p + p10]) ||
+               hasCreep(table[p - p01]) || hasCreep(table[p + p01]));
+    }
+
     const std::vector<Tumor>& getTumors() const { return tumors; }
     const std::vector<Queen>& getQueens() const { return queens; }
-    const Table& getTable() const { return table; }
     int getTime() const { return time; }
     std::size_t getFloorsRemaining() const { return floorsRemaining; }
     bool canSpread() const;
+
+    template<typename Predicate>
+    std::vector<Point> getSpreadArea(Point center, int radius,
+            const Predicate& predicate) const {
+        std::vector<Point> result;
+        for (Point p : PointRange{
+                Point{std::max<int>(center.x - radius + 1, 0),
+                      std::max<int>(center.y - radius + 1, 0)},
+                Point{std::min<int>(center.x + radius, table.width() - 1),
+                      std::min<int>(center.y + radius, table.height() - 1)}}) {
+            if (isInsideCircle(p - center, radius) && predicate(*this, p)) {
+                result.push_back(p);
+            }
+        }
+        return result;
+    }
+
 private:
     void addQueen();
     void spreadCreep();
@@ -57,5 +91,13 @@ private:
     int time = 0;
     std::size_t floorsRemaining;
 };
+
+inline
+auto getPredicate(bool (Status::*function)(Point) const) {
+    return
+            [function](const Status& status, Point p) {
+                return (status.*function)(p);
+            };
+}
 
 #endif // CREEP_STATUS_HPP

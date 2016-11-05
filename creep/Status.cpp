@@ -1,8 +1,9 @@
 #include "Status.hpp"
 
 #include "Constants.hpp"
-#include "Creep.hpp"
 #include "Log.hpp"
+
+#include <MatrixIO.hpp>
 
 #include <algorithm>
 #include <assert.h>
@@ -17,15 +18,19 @@ typename Ts::reference findObjectWithId(Ts& ts, int id) {
 
 } // unnamed namespace
 
-Status::Status(std::istream& stream, std::size_t width, std::size_t height) {
-    table = loadMatrix(stream, MapElement::Wall, width, height, true);
+Status::Status(std::istream& stream, std::size_t width, std::size_t height) :
+        table{width, height} {
+    auto matrix = loadMatrix(stream, '#', width, height, true);
+    for (Point p : matrixRange(matrix)) {
+        table[p] = matrix[p] == '.' ? MapElement::Floor : MapElement::Wall;
+    }
     Point hatcheryPosition;
     stream >> hatcheryPosition.x >> hatcheryPosition.y;
 
     // place hatchery
     for (Point p : PointRange{hatcheryPosition,
             hatcheryPosition + p11 * rules::hatcherySize}) {
-        table[p] = MapElement::Hatchery;
+        table[p] = MapElement::Building;
     }
     Point hatcheryCenter = hatcheryPosition + p11 * rules::hatcheryCenterOffset;
     tumors.emplace_back(1, hatcheryCenter, -1);
@@ -34,7 +39,7 @@ Status::Status(std::istream& stream, std::size_t width, std::size_t height) {
     for (Point p : PointRange{hatcheryPosition - p11,
             hatcheryPosition + p11 * 5}) {
         if (table[p] == MapElement::Floor) {
-            table[p] = MapElement::Creep;
+            table[p] = 0;
             break;
         }
     }
@@ -51,9 +56,6 @@ void Status::tick() {
     for (Tumor& tumor : tumors) {
         if (tumor.cooldown > 0) {
             --tumor.cooldown;
-            if (tumor.cooldown == 0) {
-                table[tumor.position] = MapElement::TumorActive;
-            }
         }
     }
     for (Queen& queen : queens) {
@@ -78,16 +80,16 @@ const Tumor& Status::addTumorFromTumor(int id, Point position) {
     Tumor& tumor = findObjectWithId(tumors, id);
     assert(tumor.cooldown == 0);
     tumor.cooldown = -1;
-    table[tumor.position] = MapElement::TumorInactive;
     return addTumor(position);
 }
 
 bool Status::canSpread() const {
     return std::any_of(tumors.begin(), tumors.end(),
             [this](const Tumor& tumor) {
-                return !getSpreadArea(table, tumor.position,
-                        rules::creepSpreadRadius, isCreepCandidate).empty();
+                return !getSpreadArea(tumor.position, rules::creepSpreadRadius,
+                        getPredicate(&Status::isCreepCandidate)).empty();
             });
+    return true;
 }
 
 void Status::addQueen() {
@@ -102,10 +104,10 @@ void Status::spreadCreep() {
 }
 
 bool Status::spreadCreepFrom(Point p, std::size_t hash) {
-    std::vector<Point> candidates = getSpreadArea(table, p,
-            rules::creepSpreadRadius, isCreepCandidate);
+    std::vector<Point> candidates = getSpreadArea(p, rules::creepSpreadRadius,
+            getPredicate(&Status::isCreepCandidate));
     if (!candidates.empty()) {
-        table[candidates[hash % candidates.size()]] = MapElement::Creep;
+        table[candidates[hash % candidates.size()]] = time;
         --floorsRemaining;
         return true;
     }
@@ -113,9 +115,9 @@ bool Status::spreadCreepFrom(Point p, std::size_t hash) {
 }
 
 const Tumor& Status::addTumor(Point position) {
-    assert(table[position] == MapElement::Creep);
+    assert(isCreep(position));
     tumors.emplace_back(nextId++, position, rules::tumorCooldownTime);
-    table[position] = MapElement::TumorCooldown;
+    table[position] = MapElement::Building;
     const Tumor& result = tumors.back();
     LOG << "Adding tumor. time=" << time << " id=" << result.id <<
             " position=" << result.position << "\n";
