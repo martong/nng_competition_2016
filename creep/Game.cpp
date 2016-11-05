@@ -84,7 +84,7 @@ void Game::print(std::ostream& stream) {
         if (status.isWall(p)) {
             tableOutput[p] = '#';
         } else if (status.isCreepCandidate(p)) {
-            tableOutput[p] = '.';
+            tableOutput[p] = '+';
         } else if (status.isFloor(p)) {
             tableOutput[p] = ' ';
         } else if (status.isCreep(p)) {
@@ -99,6 +99,13 @@ void Game::print(std::ostream& stream) {
             tableOutput[tumor.position] = 'A';
         } else {
             tableOutput[tumor.position] = 'T';
+        }
+        for (Point p : status.getSpreadArea(tumor.position,
+                    rules::creepSpreadRadius,
+                    getPredicate(&Status::isFloor))) {
+            if (tableOutput[p] != '+') {
+                tableOutput[p] = '.';
+            }
         }
     }
 
