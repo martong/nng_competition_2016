@@ -27,7 +27,7 @@ public:
 
     std::shared_ptr<Node> solve() {
         addQueenAction(game.getStatus().getQueens()[0]);
-        game.tick();
+        tick();
         doSolve();
         return currentNode;
     }
@@ -201,8 +201,10 @@ private:
     }
 
     void tick() {
-        auto it = game.getCommands().find(game.getStatus().getTime());
-        if (it != game.getCommands().end()) {
+        auto its = game.getCommands().equal_range(game.getStatus().getTime());
+        for (auto it = its.first; it != its.second; ++it) {
+            LOG << "Setting new node: time=" << game.getStatus().getTime() <<
+                    "\n";
             currentNode = std::make_shared<Node>(it->second, game.getStatus(),
                     currentNode);
         }
