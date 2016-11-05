@@ -1,5 +1,8 @@
 #include "Game.hpp"
 
+#include "Constants.hpp"
+#include "DumperFunctions.hpp"
+
 #include <boost/range/iterator_range.hpp>
 
 Game::Game(std::istream& stream) {
@@ -76,12 +79,43 @@ void Game::print(std::ostream& stream) {
     } else {
         stream << "No more commands.\n";
     }
-    //stream << status.getTable();
+    Matrix<char> tableOutput{status.width(), status.height(), '#'};
+    for (Point p : matrixRange(tableOutput)) {
+        if (status.isWall(p)) {
+            tableOutput[p] = '#';
+        } else if (status.isCreepCandidate(p)) {
+            tableOutput[p] = '.';
+        } else if (status.isFloor(p)) {
+            tableOutput[p] = ' ';
+        } else if (status.isCreep(p)) {
+            tableOutput[p] = '~';
+        }
+    }
+
+    for (const Tumor& tumor : status.getTumors()) {
+        if (tumor.cooldown < 0) {
+            tableOutput[tumor.position] = '*';
+        } else if (tumor.cooldown == 0) {
+            tableOutput[tumor.position] = 'A';
+        } else {
+            tableOutput[tumor.position] = 'T';
+        }
+    }
+
+    Point hatcheryEdge1 = status.getTumors()[0].position - p11 *
+            rules::hatcheryCenterOffset;
+    Point hatcheryEdge2 = hatcheryEdge1 + p11 * rules::hatcherySize;
+    for (Point p : PointRange{hatcheryEdge1, hatcheryEdge2}) {
+        tableOutput[p] = 'H';
+    }
+
+    dumpMatrix(stream, tableOutput);
 }
 
 bool Game::canContinue() const {
     const auto& tumors = status.getTumors();
-    return hasTime() && (nextCommand != commands.end() ||
+    return hasTime() && status.getFloorsRemaining() != 0 &&
+            (nextCommand != commands.end() ||
             status.canSpread() || std::find_if(
                     tumors.begin(), tumors.end(),
                     [](const Tumor& tumor) {

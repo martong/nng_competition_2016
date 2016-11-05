@@ -11,6 +11,10 @@ struct ToString {
         using std::to_string;
         return to_string(std::forward<T>(t));
     }
+
+    std::string operator()(char c) const {
+        return std::string{c};
+    }
 };
 
 template<typename T, typename Converter = ToString>
