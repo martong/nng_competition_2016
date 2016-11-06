@@ -25,8 +25,16 @@ public:
     }
 
     std::shared_ptr<Node> solve() {
-        addQueenAction(game.getStatus().getQueens()[0]);
-        tick();
+        if (!currentNode) {
+            addQueenAction(game.getStatus().getQueens()[0]);
+            tick();
+        } else {
+            for (auto node = currentNode;
+                    node && node->command.time == game.getStatus().getTime();
+                    node = node->ancestor) {
+                addCommand(node->command);
+            }
+        }
         doSolve();
         return currentNode;
     }
@@ -42,21 +50,25 @@ private:
                 LOG << "Iteration: " << iterations << "\n";
                 forwardToNextAvailableTumor();
                 LOG << "Moved to time: " << game.getStatus().getTime() << "\n";
-                for (const Tumor& tumor : game.getStatus().getTumors()) {
-                    pendingPositions.erase(tumor.position);
+                LOG << "Pending actions: ";
+                for (int id : pendingActions) {
+                    LOG << id << " ";
                 }
+                LOG << "\nPending positions: ";
+                for (Point p : pendingPositions) {
+                    LOG << p << " ";
+                }
+                LOG << "\n";
                 for (const Tumor& tumor : game.getStatus().getTumors()) {
                     if (isTumorAddable(tumor)) {
                         LOG << "Adding action to tumor #" << tumor.id <<
                                 "\n";
                         addTumorAction(tumor);
-                        pendingTumors.insert(tumor.id);
                         didSomething = true;
 
                     } else if (tumor.cooldown < 0) {
                         LOG << "Found inactive tumor: #" << tumor.id <<
                                 "\n";
-                        pendingTumors.erase(tumor.id);
                     }
                 }
                 for (const Queen queen: game.getStatus().getQueens()) {
@@ -93,11 +105,13 @@ private:
 
     bool isTumorAddable(const Tumor& tumor) {
         return tumor.cooldown == 0 &&
-                pendingTumors.find(tumor.id) == pendingTumors.end();
+                pendingActions.find(tumor.id) == pendingActions.end();
     }
 
     bool isQueenAddable(const Queen& queen) {
-        return queen.energy >= rules::queenEnertyRequirement;
+        return queen.energy >= rules::queenEnertyRequirement &&
+                pendingActions.find(queen.id) == pendingActions.end();
+
     }
 
     auto notPendingPredicate(bool (Status::*function)(Point) const) {
@@ -141,11 +155,18 @@ private:
                     newSpreadPoints.push_back(p);
                 }
             }
-            spreadPoints = newSpreadPoints;
+            spreadPoints = std::move(newSpreadPoints);
         }
-        for (Point p : gameTmp.getStatus().getSpreadArea(
+        auto consideredPoints = gameTmp.getStatus().getSpreadArea(
                 tumor.position, rules::creepSpreadRadius,
-                getPredicate(&Status::isCreep))) {
+                getPredicate(&Status::isCreep));
+        if (consideredPoints.empty()) {
+            LOG << "Tumor " << tumor.id <<
+                    " surrounded, cannot add more tumors.";
+            pendingActions.insert(tumor.id);
+            return;
+        }
+        for (Point p : consideredPoints) {
             float newSpreadSize = gameTmp.getStatus().getSpreadArea(p,
                     rules::creepSpreadRadius,
                     getPredicate(&Status::isFloor)).size();
@@ -155,33 +176,15 @@ private:
                     (heuristicsTable[p].time - startTime + 1) *
                     heuristics.timeMultiplier;
         }
-        //dumpMatrix(LOG, heuristicsTable, "", 0,
-                //[](const HeuristicsData& data) {
-                    //return (boost::format("%1.2f") % data.value).str();
-                //});
-        //dumpMatrix(LOG, heuristicsTable, "", 0,
-                //[](const HeuristicsData& data) {
-                    //return std::to_string(data.time);
-                //});
-        PointRange range{
-                Point{std::max<int>(tumor.position.x -
-                              rules::creepSpreadRadius + 1, 0),
-                      std::max<int>(tumor.position.y -
-                              rules::creepSpreadRadius + 1, 0)},
-                Point{std::min<int>(tumor.position.x +
-                              rules::creepSpreadRadius,
-                              game.getStatus().width() - 1),
-                      std::min<int>(tumor.position.y +
-                              rules::creepSpreadRadius,
-                              game.getStatus().height() - 1)}};
-        Point bestPoint = *std::max_element(range.begin(), range.end(),
-                    [&heuristicsTable](Point lhs, Point rhs) {
-                        return heuristicsTable[lhs] < heuristicsTable[rhs];
-                    });
-        if (heuristicsTable[bestPoint].time != 0) {
-            addCommand(heuristicsTable[bestPoint].time,
-                    CommandType::PlaceTumorFromTumor, tumor.id, bestPoint);
-        }
+
+        Point bestPoint = *std::max_element(
+                consideredPoints.begin(), consideredPoints.end(),
+                [&heuristicsTable](Point lhs, Point rhs) {
+                    return heuristicsTable[lhs] < heuristicsTable[rhs];
+                });
+        assert(heuristicsTable[bestPoint].time != 0);
+        addCommand({heuristicsTable[bestPoint].time,
+                CommandType::PlaceTumorFromTumor, tumor.id, bestPoint});
     }
 
     float calculateDistanceValue(Point p) {
@@ -202,8 +205,11 @@ private:
         for (auto it = its.first; it != its.second; ++it) {
             LOG << "Setting new node: time=" << game.getStatus().getTime() <<
                     "\n";
-            currentNode = std::make_shared<Node>(it->second, game.getStatus(),
+            const Command& command = it->second;
+            currentNode = std::make_shared<Node>(command, game.getStatus(),
                     currentNode);
+            pendingActions.erase(command.id);
+            pendingPositions.erase(command.position);
         }
         game.tick();
         if (game.getStatus().getFloorsRemaining() == 0) {
@@ -230,18 +236,22 @@ private:
                 [&spreadPossibilities](const Point& lhs, const Point& rhs) {
                     return spreadPossibilities[lhs] < spreadPossibilities[rhs];
                 });
-        addCommand(game.getStatus().getTime(),
-                CommandType::PlaceTumorFromQueen, queen.id, bestPoint);
+        addCommand({game.getStatus().getTime(),
+                CommandType::PlaceTumorFromQueen, queen.id, bestPoint});
     }
 
-    void addCommand(int time, CommandType type, int id, Point p) {
-        LOG << "Adding command: time=" << time << " type=" << type <<
-                " id=" << id << " position=" << p << "\n";
-        assert(pendingPositions.find(p) == pendingPositions.end());
-        assert(time >= game.getStatus().getTime());
-        removeCommandsAfter(time);
-        game.addCommand({time, type, id, p});
-        pendingPositions.insert(p);
+    void addCommand(const Command& command) {
+        LOG << "Adding command: time=" << command.time <<
+                " type=" << command.type <<
+                " id=" << command.id <<
+                " position=" << command.position << "\n";
+        assert(pendingPositions.find(command.position) ==
+                pendingPositions.end());
+        assert(command.time >= game.getStatus().getTime());
+        removeCommandsAfter(command.time);
+        game.addCommand(command);
+        pendingActions.insert(command.id);
+        pendingPositions.insert(command.position);
     }
 
     void removeCommandsAfter(int time) {
@@ -253,7 +263,7 @@ private:
             LOG << "Removing command: time=" << command.time <<
                     " type=" << command.type << " id=" << command.id <<
                     " position=" << command.position << "\n";
-            pendingTumors.erase(command.id);
+            pendingActions.erase(command.id);
             pendingPositions.erase(command.position);
         }
         game.removeCommands(from, to);
@@ -266,7 +276,7 @@ private:
     Game& game;
     std::shared_ptr<Node> currentNode;
     const Heuristics heuristics;
-    boost::container::flat_set<int> pendingTumors;
+    boost::container::flat_set<int> pendingActions;
     boost::container::flat_set<Point> pendingPositions;
 };
 
