@@ -10,3 +10,4 @@ include $(LINK_TUP)
 
 : first.o |> !linker |> first
 : second.o |> !linker |> second
+: third.o |> !linker |> third
