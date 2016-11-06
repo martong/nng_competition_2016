@@ -272,6 +272,10 @@ private:
     RandomGenerator& rng;
 };
 
+bool compareScores(const Solver::Solution& lhs, const Solver::Solution& rhs) {
+    return lhs.score < rhs.score;
+}
+
 } // unnamed namespace
 
 auto Solver::iterate(boost::asio::io_service& ioService) -> Solution {
@@ -282,7 +286,6 @@ auto Solver::iterate(boost::asio::io_service& ioService) -> Solution {
     solutions.reserve(parameters.runsPerIteration);
     auto onFinished =
             [&solutions, &conditionVariable, &mutex](const Solution& solution) {
-                std::cerr << ".";
                 std::unique_lock<std::mutex> lock{mutex};
                 solutions.push_back(solution);
                 conditionVariable.notify_one();
@@ -305,7 +308,7 @@ auto Solver::iterate(boost::asio::io_service& ioService) -> Solution {
             conditionVariable.wait(lock);
         }
     }
-    std::cerr << "\n";
+    normalizeSolutions(solutions);
     for (const Solution& solution : solutions) {
         LOG << "Solution: floors=" << solution.floorsRemaining <<
                 " time=" << solution.time << " score=" << solution.score <<
@@ -314,9 +317,19 @@ auto Solver::iterate(boost::asio::io_service& ioService) -> Solution {
     }
     coolDownHeatMap();
     return *std::max_element(solutions.begin(), solutions.end(),
-            [](const Solution& lhs, const Solution& rhs) {
-                return lhs.score < rhs.score;
-            });
+            compareScores);
+}
+
+void Solver::normalizeSolutions(std::vector<Solution>& solutions) {
+    auto minmax = std::minmax_element(solutions.begin(), solutions.end(),
+            compareScores);
+    float min = minmax.first->score;
+    float max = minmax.second->score;
+    float diff = max - min;
+    for (Solution& solution : solutions) {
+        solution.score = (solution.score - min) * parameters.maximumScore /
+                diff / solutions.size();
+    }
 }
 
 void Solver::updateHeatMap(const Solution& solution) {

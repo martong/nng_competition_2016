@@ -15,7 +15,7 @@ public:
         float floorPenalty = 100.0f;
         float heatFlowStrength = 0.3f;
         int heatFlowMaxDistance = 10;
-        float cooldownFactor = 0.7f;
+        float cooldownFactor = 0.75f;
         float maximumScore = 1000.0;
     };
 
@@ -42,6 +42,7 @@ public:
     Solution iterate(boost::asio::io_service& ioService);
 
 private:
+    void normalizeSolutions(std::vector<Solution>& solutions);
     void updateHeatMap(const Solution& solution);
     void coolDownHeatMap();
 

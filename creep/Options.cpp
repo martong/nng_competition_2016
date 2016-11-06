@@ -55,6 +55,9 @@ Options parseOptions(int argc, const char* argv[]) {
             ("cooldown-factor",
              defaultValue(result.solverParameters.cooldownFactor),
              "The heat is cooled down by this factor at the end of each iteration")
+            ("maximum-score",
+             defaultValue(result.solverParameters.maximumScore),
+             "The score of each run is normalized into [0, maximum-score]")
             ("spread-radius-multiplier",
              defaultValue(result.solverHeuristics.spreadRadiusMultiplier),
              "How much to prefer the increase in maximum creep")
