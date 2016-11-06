@@ -107,7 +107,9 @@ bool Status::spreadCreepFrom(Point p, std::size_t hash) {
     std::vector<Point> candidates = getSpreadArea(p, rules::creepSpreadRadius,
             getPredicate(&Status::isCreepCandidate));
     if (!candidates.empty()) {
-        table[candidates[hash % candidates.size()]] = time;
+        Point p = candidates[hash % candidates.size()];
+        table[p] = time + 1;
+        // LOG << "-- t=" << time + 1 << "Adding creep: " << p << "\n";
         --floorsRemaining;
         return true;
     }
@@ -119,7 +121,7 @@ const Tumor& Status::addTumor(Point position) {
     tumors.emplace_back(nextId++, position, rules::tumorCooldownTime);
     table[position] = MapElement::Building;
     const Tumor& result = tumors.back();
-    LOG << "Adding tumor. time=" << time << " id=" << result.id <<
+    LOG << "-- Adding tumor. time=" << time << " id=" << result.id <<
             " position=" << result.position << "\n";
     return result;
 }

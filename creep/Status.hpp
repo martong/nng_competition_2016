@@ -100,4 +100,12 @@ auto getPredicate(bool (Status::*function)(Point) const) {
             };
 }
 
+inline
+auto getNegativePredicate(bool (Status::*function)(Point) const) {
+    return
+            [function](const Status& status, Point p) {
+                return !(status.*function)(p);
+            };
+}
+
 #endif // CREEP_STATUS_HPP

@@ -19,19 +19,6 @@ boost::program_options::typed_value<T>* defaultValue(T& value) {
 
 }
 
-Finder parseFinder(const std::string& s) {
-    std::vector<std::string> tokens;
-    boost::algorithm::split(tokens, s, boost::algorithm::is_any_of(","));
-    Finder result;
-    result.begin = boost::lexical_cast<float>(tokens[0]);
-    result.end = boost::lexical_cast<float>(tokens[1]);
-    result.delta = std::abs(boost::lexical_cast<float>(tokens[2]));
-    if (result.end < result.begin) {
-        result.delta *= -1.0f;
-    }
-    return result;
-}
-
 Options parseOptions(int argc, const char* argv[]) {
     namespace po = boost::program_options;
     Options result;
@@ -44,15 +31,40 @@ Options parseOptions(int argc, const char* argv[]) {
             ("jobs,j", defaultValue(result.numThreads), "Number of threads")
             ("type,t", po::value(&result.type), "simulate or solve")
             ("map,m", po::value(&result.inputFileName), "The input file name")
-            ("distance-square-multiplier",
-                     defaultValue(distanceSquareMultiplierFinderString),
-                     "Values of distance square multiplier: min,max,delta")
-            ("time-multiplier",
-                     defaultValue(timeMultiplierFinderString),
-                     "Values of time multiplier: min,max,delta")
+            ("seed,s", defaultValue(result.seed), "The random seed (0=random)")
+            ("max-iterations,i", defaultValue(result.maxIterations),
+             "The maximum number of iterations (0=unlimited)")
+            ("output,o", po::value(&result.outputFileName),
+             "The output file name")
+            ("runs-per-iteration",
+             defaultValue(result.solverParameters.runsPerIteration),
+             "The number of runs per iteration")
+            ("time-score",
+             defaultValue(result.solverParameters.timeScore),
+             "The score awarded for each tick before the maximum when the "
+             "simulation is finished")
+            ("creep-penalty",
+             defaultValue(result.solverParameters.floorPenalty),
+             "The penalty for each floor left")
+            ("heat-flow-strength",
+             defaultValue(result.solverParameters.heatFlowStrength),
+             "How much heat flows from the position of tumors")
+            ("heat-flow-maximum-distance",
+             defaultValue(result.solverParameters.heatFlowMaxDistance),
+             "The maximum distance for heat to flow from each tumor")
+            ("cooldown-factor",
+             defaultValue(result.solverParameters.cooldownFactor),
+             "The heat is cooled down by this factor at the end of each iteration")
             ("spread-radius-multiplier",
-                     defaultValue(spreadRadiusMultiplierFinderString),
-                     "Values of spread radius multiplier: min,max,delta");
+             defaultValue(result.solverHeuristics.spreadRadiusMultiplier),
+             "How much to prefer the increase in maximum creep")
+            ("time-multiplier",
+             defaultValue(result.solverHeuristics.timeMultiplier),
+             "How much to prefer putting down a tumor early.")
+            ("minimum-distance-multiplier",
+             defaultValue(result.solverHeuristics.minimumDistanceMultiplier),
+             "How much to prefer putting tumors far from each other")
+            ;
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).
             options(options).run(), vm);
@@ -61,10 +73,5 @@ Options parseOptions(int argc, const char* argv[]) {
         std::cerr << options;
         std::exit(0);
     }
-    result.timeMultiplierFinder = parseFinder(timeMultiplierFinderString);
-    result.distanceSquareMultiplierFinder =
-            parseFinder(distanceSquareMultiplierFinderString);
-    result.spreadRadiusMultiplierFinder =
-            parseFinder(spreadRadiusMultiplierFinderString);
     return result;
 }

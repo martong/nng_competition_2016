@@ -5,12 +5,18 @@
 
 #include <DumperFunctions.hpp>
 
+#include <boost/asio/strand.hpp>
 #include <boost/format.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/iterator_range.hpp>
+#include <boost/range/algorithm/min_element.hpp>
 
 #include <algorithm>
+#include <mutex>
+#include <condition_variable>
+#include <random>
 
 namespace {
 
@@ -18,28 +24,34 @@ struct Finished {};
 
 class SolverImpl {
 public:
-    SolverImpl(Game& game, const Heuristics& heuristics,
-            std::shared_ptr<Node> startingNode) :
-            game(game), currentNode(std::move(startingNode)),
-            heuristics(heuristics) {
+    SolverImpl(const Game& game, const Matrix<float>& heatMap,
+            const Solver::Heuristics& heuristics, RandomGenerator& rng) :
+            game(game), heatMap(heatMap), heuristics(heuristics), rng(rng) {
     }
 
-    std::shared_ptr<Node> solve() {
-        if (!currentNode) {
-            addQueenAction(game.getStatus().getQueens()[0]);
-            tick();
-        } else {
-            for (auto node = currentNode;
-                    node && node->command.time == game.getStatus().getTime();
-                    node = node->ancestor) {
-                addCommand(node->command);
-            }
-        }
+    Solver::Solution solve() {
+        addQueenAction(game.getStatus().getQueens()[0]);
+        tick();
         doSolve();
-        return currentNode;
+        Solver::Solution solution;
+        std::transform(game.getCommands().begin(), game.getCommands().end(),
+                std::back_inserter(solution.commands),
+                [](const auto& element) { return element.second; });
+        solution.floorsRemaining = game.getStatus().getFloorsRemaining();
+        solution.time = game.getStatus().getTime();
+        return solution;
     }
 
 private:
+    struct CalculatedData {
+        CalculatedData(const Game& game, const Matrix<float>& heatMap) :
+                game(game), heatMap(heatMap) {
+        }
+
+        Game game;
+        Matrix<float> heatMap;
+    };
+
     void doSolve() {
         std::size_t iterations = 0;
         bool didSomething = true;
@@ -122,42 +134,8 @@ private:
     }
 
     void addTumorAction(const Tumor& tumor) {
-        struct HeuristicsData {
-            float value = 0.0;
-            int time = 0;
-
-            bool operator<(const HeuristicsData& other) {
-                return value < other.value || (
-                        value == other.value &&
-                        time == other.time);
-            }
-        };
-
-        int startTime = game.getStatus().getTime();
-        Matrix<HeuristicsData> heuristicsTable{
-                game.getStatus().width(), game.getStatus().height()};
-        for (Point p : game.getStatus().getSpreadArea(
-                    tumor.position, rules::creepSpreadRadius,
-                    notPendingPredicate(&Status::isCreep))) {
-            heuristicsTable[p].time = game.getStatus().getTime();
-        }
-        auto spreadPoints = game.getStatus().getSpreadArea(
-                tumor.position, rules::creepSpreadRadius,
-                notPendingPredicate(&Status::isFloor));
-        Game gameTmp = game;
-        while (gameTmp.canContinue()) {
-            gameTmp.tick();
-            std::vector<Point> newSpreadPoints;
-            for (Point p : spreadPoints) {
-                if (gameTmp.getStatus().isCreep(p)) {
-                    heuristicsTable[p].time = gameTmp.getStatus().getTime();
-                } else if (gameTmp.getStatus().isFloor(p)) {
-                    newSpreadPoints.push_back(p);
-                }
-            }
-            spreadPoints = std::move(newSpreadPoints);
-        }
-        auto consideredPoints = gameTmp.getStatus().getSpreadArea(
+        auto calculatedData = calculateData();
+        auto consideredPoints = calculatedData.game.getStatus().getSpreadArea(
                 tumor.position, rules::creepSpreadRadius,
                 getPredicate(&Status::isCreep));
         if (consideredPoints.empty()) {
@@ -166,48 +144,17 @@ private:
             pendingActions.insert(tumor.id);
             return;
         }
-        for (Point p : consideredPoints) {
-            float newSpreadSize = gameTmp.getStatus().getSpreadArea(p,
-                    rules::creepSpreadRadius,
-                    getPredicate(&Status::isFloor)).size();
-            heuristicsTable[p].value = newSpreadSize *
-                    heuristics.spreadRadiusMultiplier +
-                    calculateDistanceValue(p) +
-                    (heuristicsTable[p].time - startTime + 1) *
-                    heuristics.timeMultiplier;
-        }
-
-        Point bestPoint = *std::max_element(
-                consideredPoints.begin(), consideredPoints.end(),
-                [&heuristicsTable](Point lhs, Point rhs) {
-                    return heuristicsTable[lhs] < heuristicsTable[rhs];
-                });
-        assert(heuristicsTable[bestPoint].time != 0);
-        addCommand({heuristicsTable[bestPoint].time,
+        Point bestPoint = findBestPoint(calculatedData, consideredPoints);
+        addCommand({
+                std::max(game.getStatus().getTime(),
+                        calculatedData.game.getStatus().creepTime(bestPoint)),
                 CommandType::PlaceTumorFromTumor, tumor.id, bestPoint});
-    }
-
-    float calculateDistanceValue(Point p) {
-        float distanceValue = 0.0f;
-        for (const Tumor& tumor : game.getStatus().getTumors()) {
-            distanceValue += heuristics.distanceSquareMultiplier /
-                    distanceSquare(p, tumor.position);
-        }
-        for (Point pendingPosition : pendingPositions) {
-            distanceValue += heuristics.distanceSquareMultiplier /
-                    distanceSquare(p, pendingPosition);
-        }
-        return distanceValue;
     }
 
     void tick() {
         auto its = game.getCommands().equal_range(game.getStatus().getTime());
         for (auto it = its.first; it != its.second; ++it) {
-            LOG << "Setting new node: time=" << game.getStatus().getTime() <<
-                    "\n";
             const Command& command = it->second;
-            currentNode = std::make_shared<Node>(command, game.getStatus(),
-                    currentNode);
             pendingActions.erase(command.id);
             pendingPositions.erase(command.position);
         }
@@ -218,26 +165,70 @@ private:
     }
 
     void addQueenAction(const Queen& queen) {
-        const Status& status = game.getStatus();
-        Matrix<float> spreadPossibilities{status.width(), status.height(), 0};
-        std::vector<Point> candidates;
-        for (Point p : matrixRange(spreadPossibilities)) {
-            if (status.isCreep(p) && isNotPending(p)) {
-                spreadPossibilities[p] = status.getSpreadArea(p,
-                        rules::creepSpreadRadius,
-                        getPredicate(&Status::isFloor)).size() *
-                        heuristics.spreadRadiusMultiplier +
-                        calculateDistanceValue(p);
-                candidates.push_back(p);
+        auto calculatedData = calculateData();
+        Point bestPoint = findBestPoint(calculatedData, matrixRange(heatMap));
+        addCommand({
+                std::max(game.getStatus().getTime(),
+                        calculatedData.game.getStatus().creepTime(bestPoint)),
+                CommandType::PlaceTumorFromQueen, queen.id, bestPoint});
+    }
+
+    CalculatedData calculateData() {
+        CalculatedData calculatedData{game,
+                Matrix<float>{heatMap.width(), heatMap.height(), 0.0f}};
+        while(calculatedData.game.canContinue()) {
+            calculatedData.game.tick();
+        }
+        const Status& status = calculatedData.game.getStatus();
+        for (Point p : matrixRange(heatMap)) {
+            auto spreadPoints = game.getStatus().getSpreadArea(
+                    p, rules::creepSpreadRadius,
+                    notPendingPredicate(&Status::isFloor));
+            if (status.isCreep(p)) {
+                int minDistance = std::numeric_limits<int>::max();
+                for (Point pendingPosition : pendingPositions) {
+                    minDistance = std::min(minDistance,
+                            distanceSquare(pendingPosition, p));
+
+                }
+                for (const Tumor& tumor : game.getStatus().getTumors()) {
+                    minDistance = std::min(minDistance,
+                            distanceSquare(tumor.position, p));
+
+                }
+                calculatedData.heatMap[p] = heatMap[p] +
+                        heuristics.spreadRadiusMultiplier *
+                                spreadPoints.size() -
+                        heuristics.timeMultiplier * std::max(0,
+                                status.creepTime(p) -
+                                game.getStatus().getTime()) -
+                        heuristics.minimumDistanceMultiplier * minDistance;
             }
         }
-        Point bestPoint = *std::max_element(
-                candidates.begin(), candidates.end(),
-                [&spreadPossibilities](const Point& lhs, const Point& rhs) {
-                    return spreadPossibilities[lhs] < spreadPossibilities[rhs];
+        return calculatedData;
+    }
+
+    template<typename Range>
+    Point findBestPoint(const CalculatedData& calculatedData,
+            const Range& range) {
+        std::vector<Point> points;
+        std::copy_if(range.begin(), range.end(), std::back_inserter(points),
+                [&calculatedData](Point p) {
+                    return calculatedData.heatMap[p] != 0;
                 });
-        addCommand({game.getStatus().getTime(),
-                CommandType::PlaceTumorFromQueen, queen.id, bestPoint});
+        auto weights = points | boost::adaptors::transformed(
+                [&calculatedData](Point p) {
+                    return calculatedData.heatMap[p];
+                });
+
+        std::discrete_distribution<std::size_t> distribution{weights.begin(),
+                weights.end()};
+        Point point = points[distribution(rng)];
+        LOG << "Using point " << point <<
+                ": score=" << calculatedData.heatMap[point] <<
+                " creepTime=" << calculatedData.game.getStatus().
+                creepTime(point) << "\n";
+        return point;
     }
 
     void addCommand(const Command& command) {
@@ -273,30 +264,79 @@ private:
         return pendingPositions.find(p) == pendingPositions.end();
     }
 
-    Game& game;
-    std::shared_ptr<Node> currentNode;
-    const Heuristics heuristics;
+    Game game;
+    const Matrix<float>& heatMap;
+    const Solver::Heuristics& heuristics;
     boost::container::flat_set<int> pendingActions;
     boost::container::flat_set<Point> pendingPositions;
+    RandomGenerator& rng;
 };
 
 } // unnamed namespace
 
-Solution findSolution(Game game, const Heuristics& heuristics,
-        std::shared_ptr<Node> startingNode) {
-    LOG << "Solve: tm=" << heuristics.timeMultiplier <<
-            " dsm=" << heuristics.distanceSquareMultiplier <<
-            " srm=" << heuristics.spreadRadiusMultiplier << "\n";
-    Solution result;
-    SolverImpl impl{game, heuristics, std::move(startingNode)};
-    result.node = impl.solve();
-    result.time = game.getStatus().getTime();
-    result.floorsRemaining = game.getStatus().getFloorsRemaining();
-    result.heuristics = heuristics;
-    LOG << "Solution: tm=" << heuristics.timeMultiplier <<
-            " dsm=" << heuristics.distanceSquareMultiplier <<
-            " srm=" << heuristics.spreadRadiusMultiplier <<
-            " floors=" << result.floorsRemaining <<
-            " time=" << result.time << "\n";
-    return result;
+auto Solver::iterate(boost::asio::io_service& ioService) -> Solution {
+    std::mutex mutex;
+    std::condition_variable conditionVariable;
+    boost::asio::strand strand{ioService};
+    std::vector<Solution> solutions;
+    solutions.reserve(parameters.runsPerIteration);
+    auto onFinished =
+            [&solutions, &conditionVariable, &mutex](const Solution& solution) {
+                std::cerr << ".";
+                std::unique_lock<std::mutex> lock{mutex};
+                solutions.push_back(solution);
+                conditionVariable.notify_one();
+            };
+    for (std::size_t i = 0; i < parameters.runsPerIteration; ++i) {
+            ioService.post([this, &ioService, &strand, &onFinished]() {
+                auto solution = SolverImpl{
+                        initialGame, heatMap, heuristics, rng}.solve();
+                solution.score = - solution.floorsRemaining *
+                        parameters.floorPenalty +
+                        (initialGame.getTimeLimit() - solution.time) *
+                        parameters.timeScore;
+                ioService.post(strand.wrap(
+                        [&onFinished, solution]() { onFinished(solution); }));
+            });
+    }
+    {
+        std::unique_lock<std::mutex> lock{mutex};
+        while (solutions.size() < parameters.runsPerIteration) {
+            conditionVariable.wait(lock);
+        }
+    }
+    std::cerr << "\n";
+    for (const Solution& solution : solutions) {
+        LOG << "Solution: floors=" << solution.floorsRemaining <<
+                " time=" << solution.time << " score=" << solution.score <<
+                "\n";
+        updateHeatMap(solution);
+    }
+    coolDownHeatMap();
+    return *std::max_element(solutions.begin(), solutions.end(),
+            [](const Solution& lhs, const Solution& rhs) {
+                return lhs.score < rhs.score;
+            });
+}
+
+void Solver::updateHeatMap(const Solution& solution) {
+    for (const Command& command : solution.commands) {
+        for (Point p : initialGame.getStatus().getSpreadArea(command.position,
+                    parameters.heatFlowMaxDistance,
+                    getNegativePredicate(&Status::isWall))) {
+            if (p == command.position) {
+                heatMap[p] += solution.score;
+            } else {
+                heatMap[p] += solution.score * parameters.heatFlowStrength /
+                        distanceSquare(p, command.position);
+            }
+        }
+    }
+    //dumpMatrix(std::cerr, heatMap);
+}
+
+void Solver::coolDownHeatMap() {
+    for (float& heat : heatMap) {
+        heat *= parameters.cooldownFactor;
+    }
 }

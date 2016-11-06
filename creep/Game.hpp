@@ -60,6 +60,7 @@ public:
     const Status& getStatus() const { return status; }
     const Commands& getCommands() const { return commands; }
 
+    int getTimeLimit() const { return timeLimit; }
     bool hasTime() const { return status.getTime() < timeLimit; }
     bool canContinue() const;
 

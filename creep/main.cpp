@@ -1,5 +1,6 @@
 #include "Game.hpp"
 #include "Options.hpp"
+#include "Random.hpp"
 #include "Solver.hpp"
 
 #include <util/PrefixMap.hpp>
@@ -24,74 +25,36 @@ void simulate(Game& game, const Options&) {
     }
 }
 
-template<typename OnFinished>
-void doSolve(const Game& game, const Heuristics& heuristics,
-        const OnFinished& onFinished) {
-    std::cerr << "Solving: tm=" << heuristics.timeMultiplier <<
-            " dsm=" << heuristics.distanceSquareMultiplier <<
-            " srm=" << heuristics.spreadRadiusMultiplier << "\n";
-    auto solution = findSolution(game, heuristics);
-    std::cerr << "Solved: tm=" << solution.heuristics.timeMultiplier <<
-            " dsm=" << solution.heuristics.distanceSquareMultiplier <<
-            " srm=" << solution.heuristics.spreadRadiusMultiplier <<
-            " floors=" << solution.floorsRemaining <<
-            " time=" << solution.time << "\n";
-    onFinished(solution);
-}
-
-void solve(Game& game, const Options& options) {
-    std::vector<Solution> solutions;
-    util::ThreadPool threadPool{options.numThreads};
-    boost::asio::io_service& ioService = threadPool.getIoService();
-    boost::asio::strand strand{ioService};
-    auto onFinished =
-            [&solutions, &ioService, &strand](const Solution& solution) {
-                ioService.post(strand.wrap(
-                        [&solutions, solution]() {
-                            solutions.push_back(solution);
-                        }));
-            };
-    threadPool.start();
-    iterateFinder(options.timeMultiplierFinder,
-            [&](float timeMultiplier) {
-                iterateFinder(options.distanceSquareMultiplierFinder,
-                        [&](float distanceSquareMultiplier) {
-                            iterateFinder(options.spreadRadiusMultiplierFinder,
-                                    [&](float spreadRadiusMultiplier) {
-                                        ioService.post(
-                                                [=, &game, &onFinished]() {
-                                                    doSolve(game, {
-                                                    timeMultiplier,
-                                                    distanceSquareMultiplier,
-                                                    spreadRadiusMultiplier},
-                                                    onFinished);
-                                                });
-                                    });
-                        });
-            });
-    threadPool.wait();
-    if (solutions.empty()) {
-        std::cerr << "There was no simulations.\n";
-        return;
-    }
-    const auto& solution = *std::min_element(solutions.begin(), solutions.end(),
-            [](const Solution& lhs, const Solution& rhs) {
-                return lhs.floorsRemaining < rhs.floorsRemaining ||
-                        (lhs.floorsRemaining == rhs.floorsRemaining &&
-                         lhs.time < rhs.time);
-            });
-    std::cerr << "Best solution: tm=" << solution.heuristics.timeMultiplier <<
-            " dsm=" << solution.heuristics.distanceSquareMultiplier <<
-            " srm=" << solution.heuristics.spreadRadiusMultiplier <<
-            " floors=" << solution.floorsRemaining <<
-            " time=" << solution.time << "\n";
-    auto commands = getCommands(solution.node);
-    std::cout << commands.size() << "\n";
+void printCommands(std::ostream& stream, const Solver::Solution& solution) {
+    const auto& commands = solution.commands;
+    stream << commands.size() << "\n";
     for (const Command& command : commands) {
-        std::cout << command.time << " " << command.type << " " <<
+        stream << command.time << " " << command.type << " " <<
                 command.id << " " << command.position.x << " " <<
                 command.position.y << "\n";
     }
+}
+
+void solve(Game& game, const Options& options) {
+    util::ThreadPool threadPool{options.numThreads};
+    RandomGenerator rng{options.seed == 0 ? std::random_device{}() :
+            options.seed};
+    Solver solver{rng, game, options.solverParameters,
+            options.solverHeuristics};
+    threadPool.start();
+    for (std::size_t iteration = 0;
+                options.maxIterations == 0 || iteration < options.maxIterations;
+                ++iteration) {
+        auto solution = solver.iterate(threadPool.getIoService());
+        std::ofstream fs{options.outputFileName};
+        printCommands(fs, solution);
+        if (iteration % 1 == 0) {
+            std::cerr << "Iteration #" << iteration <<
+                    " floors=" << solution.floorsRemaining <<
+                    " time=" << solution.time << "\n";
+        }
+    }
+    threadPool.wait();
 }
 
 int main(int argc, const char* argv[]) {
