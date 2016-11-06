@@ -27,7 +27,15 @@ void simulate(Game& game, const Options&) {
 template<typename OnFinished>
 void doSolve(const Game& game, const Heuristics& heuristics,
         const OnFinished& onFinished) {
+    std::cerr << "Solving: tm=" << heuristics.timeMultiplier <<
+            " dsm=" << heuristics.distanceSquareMultiplier <<
+            " srm=" << heuristics.spreadRadiusMultiplier << "\n";
     auto solution = findSolution(game, heuristics);
+    std::cerr << "Solved: tm=" << solution.heuristics.timeMultiplier <<
+            " dsm=" << solution.heuristics.distanceSquareMultiplier <<
+            " srm=" << solution.heuristics.spreadRadiusMultiplier <<
+            " floors=" << solution.floorsRemaining <<
+            " time=" << solution.time << "\n";
     onFinished(solution);
 }
 
