@@ -2,6 +2,7 @@
 
 #include "Constants.hpp"
 #include "DumperFunctions.hpp"
+#include "Spread.hpp"
 
 #include <boost/range/iterator_range.hpp>
 
@@ -100,13 +101,13 @@ void Game::print(std::ostream& stream) {
         } else {
             tableOutput[tumor.position] = 'T';
         }
-        for (Point p : status.getSpreadArea(tumor.position,
-                    rules::creepSpreadRadius,
-                    getPredicate(&Status::isFloor))) {
-            if (tableOutput[p] != '+') {
-                tableOutput[p] = '.';
-            }
-        }
+        iterateSpreadArea(getMax(status), tumor.position,
+                rules::creepSpreadRadius,
+                [&tableOutput, this](Point p) {
+                    if (status.isFloor(p) && tableOutput[p] != '+') {
+                        tableOutput[p] = '.';
+                    }
+                });
     }
 
     Point hatcheryEdge1 = status.getTumors()[0].position - p11 *

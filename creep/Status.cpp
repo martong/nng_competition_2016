@@ -2,6 +2,7 @@
 
 #include "Constants.hpp"
 #include "Log.hpp"
+#include "Spread.hpp"
 
 #include <MatrixIO.hpp>
 
@@ -86,8 +87,9 @@ const Tumor& Status::addTumorFromTumor(int id, Point position) {
 bool Status::canSpread() const {
     return std::any_of(tumors.begin(), tumors.end(),
             [this](const Tumor& tumor) {
-                return !getSpreadArea(tumor.position, rules::creepSpreadRadius,
-                        getPredicate(&Status::isCreepCandidate)).empty();
+                return countSpreadArea(getMax(*this), tumor.position,
+                        rules::creepSpreadRadius,
+                        getPredicate(*this, &Status::isCreepCandidate)) != 0;
             });
     return true;
 }
@@ -104,8 +106,9 @@ void Status::spreadCreep() {
 }
 
 bool Status::spreadCreepFrom(Point p, std::size_t hash) {
-    std::vector<Point> candidates = getSpreadArea(p, rules::creepSpreadRadius,
-            getPredicate(&Status::isCreepCandidate));
+    std::vector<Point> candidates = findSpreadArea(getMax(*this), p,
+            rules::creepSpreadRadius,
+            getPredicate(*this, &Status::isCreepCandidate));
     if (!candidates.empty()) {
         table[candidates[hash % candidates.size()]] = time;
         --floorsRemaining;
