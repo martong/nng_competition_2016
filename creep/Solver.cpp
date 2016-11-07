@@ -2,6 +2,7 @@
 
 #include "Constants.hpp"
 #include "Log.hpp"
+#include "Spread.hpp"
 
 #include <DumperFunctions.hpp>
 
@@ -114,9 +115,10 @@ private:
 
     }
 
-    auto notPendingPredicate(bool (Status::*function)(Point) const) {
+    auto notPendingPredicate(const Status& status,
+            bool (Status::*function)(Point) const) {
         return
-                [this, function](const Status& status, Point p) {
+                [this, function, &status](Point p) {
                     return (status.*function)(p) && isNotPending(p);
                 };
     }
@@ -136,14 +138,16 @@ private:
         int startTime = game.getStatus().getTime();
         Matrix<HeuristicsData> heuristicsTable{
                 game.getStatus().width(), game.getStatus().height()};
-        for (Point p : game.getStatus().getSpreadArea(
-                    tumor.position, rules::creepSpreadRadius,
-                    notPendingPredicate(&Status::isCreep))) {
-            heuristicsTable[p].time = game.getStatus().getTime();
-        }
-        auto spreadPoints = game.getStatus().getSpreadArea(
+        iterateSpreadArea(getMax(game.getStatus()), tumor.position,
+                rules::creepSpreadRadius,
+                [&heuristicsTable, this](Point p) {
+                    if (game.getStatus().isCreep(p) && isNotPending(p)) {
+                        heuristicsTable[p].time = game.getStatus().getTime();
+                    }
+                });
+        auto spreadPoints = findSpreadArea(getMax(game.getStatus()),
                 tumor.position, rules::creepSpreadRadius,
-                notPendingPredicate(&Status::isFloor));
+                notPendingPredicate(game.getStatus(), &Status::isFloor));
         Game gameTmp = game;
         while (gameTmp.canContinue()) {
             gameTmp.tick();
@@ -157,9 +161,9 @@ private:
             }
             spreadPoints = std::move(newSpreadPoints);
         }
-        auto consideredPoints = gameTmp.getStatus().getSpreadArea(
+        auto consideredPoints = findSpreadArea(getMax(game.getStatus()),
                 tumor.position, rules::creepSpreadRadius,
-                getPredicate(&Status::isCreep));
+                getPredicate(gameTmp.getStatus(), &Status::isCreep));
         if (consideredPoints.empty()) {
             LOG << "Tumor " << tumor.id <<
                     " surrounded, cannot add more tumors.";
@@ -167,9 +171,9 @@ private:
             return;
         }
         for (Point p : consideredPoints) {
-            float newSpreadSize = gameTmp.getStatus().getSpreadArea(p,
+            float newSpreadSize = countSpreadArea(getMax(game.getStatus()), p,
                     rules::creepSpreadRadius,
-                    getPredicate(&Status::isFloor)).size();
+                    getPredicate(gameTmp.getStatus(), &Status::isFloor));
             heuristicsTable[p].value = newSpreadSize *
                     heuristics.spreadRadiusMultiplier +
                     calculateDistanceValue(p) +
@@ -223,9 +227,9 @@ private:
         std::vector<Point> candidates;
         for (Point p : matrixRange(spreadPossibilities)) {
             if (status.isCreep(p) && isNotPending(p)) {
-                spreadPossibilities[p] = status.getSpreadArea(p,
-                        rules::creepSpreadRadius,
-                        getPredicate(&Status::isFloor)).size() *
+                spreadPossibilities[p] = countSpreadArea(
+                        getMax(game.getStatus()), p, rules::creepSpreadRadius,
+                        getPredicate(status, &Status::isFloor)) *
                         heuristics.spreadRadiusMultiplier +
                         calculateDistanceValue(p);
                 candidates.push_back(p);

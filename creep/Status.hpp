@@ -62,22 +62,6 @@ public:
     std::size_t getFloorsRemaining() const { return floorsRemaining; }
     bool canSpread() const;
 
-    template<typename Predicate>
-    std::vector<Point> getSpreadArea(Point center, int radius,
-            const Predicate& predicate) const {
-        std::vector<Point> result;
-        for (Point p : PointRange{
-                Point{std::max<int>(center.x - radius + 1, 0),
-                      std::max<int>(center.y - radius + 1, 0)},
-                Point{std::min<int>(center.x + radius, table.width() - 1),
-                      std::min<int>(center.y + radius, table.height() - 1)}}) {
-            if (isInsideCircle(p - center, radius) && predicate(*this, p)) {
-                result.push_back(p);
-            }
-        }
-        return result;
-    }
-
 private:
     void addQueen();
     void spreadCreep();
@@ -93,9 +77,9 @@ private:
 };
 
 inline
-auto getPredicate(bool (Status::*function)(Point) const) {
+auto getPredicate(const Status& status, bool (Status::*function)(Point) const) {
     return
-            [function](const Status& status, Point p) {
+            [function, &status](Point p) {
                 return (status.*function)(p);
             };
 }
