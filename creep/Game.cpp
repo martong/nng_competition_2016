@@ -123,10 +123,9 @@ void Game::print(std::ostream& stream) {
 bool Game::canContinue() const {
     const auto& tumors = status.getTumors();
     return hasTime() && status.getFloorsRemaining() != 0 &&
-            (nextCommand != commands.end() ||
-            status.canSpread() || std::find_if(
+            (nextCommand != commands.end() || std::any_of(
                     tumors.begin(), tumors.end(),
                     [](const Tumor& tumor) {
                         return tumor.cooldown > 0;
-                    }) != tumors.end());
+                    }) || status.canSpread());
 }
