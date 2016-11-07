@@ -2,8 +2,8 @@ include_rules
 
 include $(COMPILE_TUP)
 
-#INCLUDE_DIRS += -I$(UTIL_DIR) -I$(CPP_UTIL_DIR)/include
-#LIBS += -lboost_program_options -lpthread -lboost_system -lboost_thread
+INCLUDE_DIRS += -I$(CPP_UTIL_DIR)/include
+LIBS += -lpthread -lboost_system -lboost_thread
 
 : foreach *.cpp |> !cxx |>
 
@@ -11,4 +11,4 @@ include $(LINK_TUP)
 
 #: *.o $(UTIL_DIR)/*.o $(CPP_UTIL_DIR)/lib/libcpp-util.a |> !linker |> worddomino
 : main.o |> !linker |> worddomino
-: second.o |> !linker |> second
+: second.o $(CPP_UTIL_DIR)/lib/libcpp-util.a |> !linker |> second
