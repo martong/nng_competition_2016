@@ -58,20 +58,45 @@ int main(int argc, char* argv[]) {
     std::size_t wordIndex = 0;
     std::size_t matchLength = 0;
     std::string output;
+    std::vector<std::pair<std::size_t, std::size_t>> wordSequence;
+    std::size_t noMatch = 0;
     while (!unusedWords.empty()) {
-        if (!verbose) {
-            std::cout << words[wordIndex].substr(matchLength);
-        } else {
-            output += words[wordIndex].substr(matchLength);
+        if (verbose) {
             std::cerr << words[wordIndex] << '(' << matchLength << ')' << " + ";
         }
+        std::cout << words[wordIndex].substr(matchLength);
+        output += words[wordIndex].substr(matchLength);
         unusedWords.erase(wordIndex);
+        wordSequence.push_back(std::make_pair(wordIndex, matchLength));
         wordIndex = findBestMatch(wordIndex, words, unusedWords, matchLength);
         if (wordIndex == 0 && !unusedWords.empty()) {
+            ++noMatch;
             wordIndex = *unusedWords.begin();
             matchLength = 0; // just to be sure
         }
     }
-    std::cerr << std::endl;
+    std::cerr << std::endl << "number of no matches: " << noMatch << std::endl;
     std::cout << output << std::endl;
+
+    assert(wordSequence.size() == words.size());
+    std::vector<std::pair<std::size_t, std::size_t>> uniqueSequence;
+    std::unique_copy(wordSequence.begin(), wordSequence.end(),
+            std::back_inserter(uniqueSequence),
+            [](std::pair<std::size_t, std::size_t> a,
+                    std::pair<std::size_t, std::size_t> b) {
+                return a.first == b.first;
+            });
+    assert(uniqueSequence.size() == wordSequence.size());
+
+    std::size_t pos = 0;
+    for (const auto& elem : wordSequence) {
+        const std::string& word = words[elem.first];
+        std::size_t wordSize = word.size();
+        pos -= elem.second;
+        assert(word == output.substr(pos, wordSize));
+        pos += wordSize;
+    }
+
+    assert(100000 == words.size());
+    assert(100000 == wordSequence.size());
 }
