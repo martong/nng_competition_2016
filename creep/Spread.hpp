@@ -1,31 +1,22 @@
 #ifndef CREEP_SPREAD_HPP
 #define CREEP_SPREAD_HPP
 
+#include "CircleCache.hpp"
+
 #include <Point.hpp>
 
-#include <vector>
+#include <boost/container/flat_map.hpp>
 
-inline bool isInsideCircle(Point p, int radius) {
-    // magic
-    int dx_q1=2*p.x+(0<p.x?1:-1);
-    int dy_q1=2*p.y+(0<p.y?1:-1);
-    int d2_q2=dx_q1*dx_q1+dy_q1*dy_q1;
-    return d2_q2<=radius*radius*4;
-}
+#include <vector>
 
 template<typename Function>
 void iterateSpreadArea(Point bound, Point center, int radius,
         const Function& function) {
-    Point min{std::max<int>(center.x - radius + 1, 0),
-              std::max<int>(center.y - radius + 1, 0)};
-    Point max{std::min<int>(center.x + radius, bound.x - 1),
-              std::min<int>(center.y + radius, bound.y - 1)};
-    Point p;
-    for (p.y = min.y; p.y < max.y; ++p.y) {
-        for (p.x = min.x; p.x < max.x; ++p.x) {
-            if (isInsideCircle(p - center, radius)) {
-                function(p);
-            }
+    static CircleCache circleCache;
+    for (Point p : circleCache.get(radius)) {
+        Point pp = p + center;
+        if (pp.x >= 0 && pp.x < bound.x && pp.y >= 0 && pp.y < bound.y) {
+            function(pp);
         }
     }
 }
