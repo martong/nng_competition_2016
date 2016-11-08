@@ -157,33 +157,33 @@ TEST(M3x3, segfault) {
 }
 
 TEST(M3x3, many) {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         auto m = generate(3,3);
-        std::cout << m;
+        std::cout << "Generated:" << m;
         auto ps = solve(m);
         if (!check(ps, m)) {
             auto m2 = build(m.width(), m.height(), ps);
-            std::cout << ps << m2;
+            std::cout << "Result:" << ps << "Result generates:" << m2;
         }
-        EXPECT_TRUE(check(ps, m));
+        ASSERT_TRUE(check(ps, m));
     }
 }
 
 TEST(M4x4, many) {
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 100; ++i) {
         auto m = generate(4,4);
-        std::cout << m;
+        std::cout << "Generated:" << m;
         auto ps = solve(m);
         if (!check(ps, m)) {
             auto m2 = build(m.width(), m.height(), ps);
-            std::cout << ps << m2;
+            std::cout << "Result:" << ps << "Result generates:" << m2;
         }
-        EXPECT_TRUE(check(ps, m));
+        ASSERT_TRUE(check(ps, m));
     }
 }
 
 TEST(Big, first) {
         auto m = generate(10,10);
         auto ps = solve(m);
-        //EXPECT_TRUE(check(ps, m));
+        EXPECT_TRUE(check(ps, m));
 }
