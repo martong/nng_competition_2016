@@ -30,21 +30,21 @@ int main(int argc, const char* argv[]) {
     std::vector<std::size_t> solutionVector;
     std::copy(solution.begin(), solution.end(),
             std::back_inserter(solutionVector));
+    for (std::size_t i : solutionVector) {
+        std::cout << i << " ";
+    }
+    std::cout << std::endl;
     auto answer = FindRadioactiveBalls(numberOfBalls, radioactiveBalls,
             &testFunction);
     std::sort(answer.begin(), answer.end());
     for (std::size_t i : answer) {
         std::cout << i << " ";
     }
-    std::cout << "\n";
-    for (std::size_t i : solutionVector) {
-        std::cout << i << " ";
-    }
-    std::cout << "\n";
+    std::cout << std::endl;
     if (solutionVector == answer) {
-        std::cout << "OK\n";
+        std::cout << "OK" << std::endl;
     } else {
-        std::cout << "bad\n";
+        std::cout << "bad" << std::endl;
     }
-    std::cout << "Called: " << called << "\n";
+    std::cout << "Called: " << called << std::endl;
 }
