@@ -77,6 +77,37 @@ TEST(solution, 2x2) {
     EXPECT_TRUE(check(ps, m));
 }
 
+TEST(M2x2, many) {
+    for (int i = 0; i < 100; ++i) {
+        auto m = generate(2,2);
+        std::cout << m;
+        auto ps = solve(m);
+        if (!check(ps, m)) {
+            auto m2 = build(m.width(), m.height(), ps);
+            std::cout << ps << m2;
+        }
+        EXPECT_TRUE(check(ps, m));
+    }
+}
+
+//TEST(solution, solve2) {
+    //Matrix<int> m{2, 2};
+    //m[p00] = 1;
+    //m[p10] = 3;
+    //m[p01] = 3;
+    //m[p11] = 1;
+    //std::cout << m;
+
+    //auto ps = solve2(m);
+    //std::cout << ps;
+
+    //auto m2 = build(m.width(), m.height(), ps);
+    //std::cout << m2;
+
+    ////EXPECT_TRUE(m2 == m);
+    //EXPECT_TRUE(check(ps, m));
+//}
+
 TEST(solution, 3x3) {
     Matrix<int> m{3, 3};
     m[{0,0}] = 1;
@@ -125,19 +156,6 @@ TEST(M3x3, segfault) {
     EXPECT_TRUE(check(ps, m));
 }
 
-TEST(M2x2, many) {
-    for (int i = 0; i < 100; ++i) {
-        auto m = generate(2,2);
-        std::cout << m;
-        auto ps = solve(m);
-        if (!check(ps, m)) {
-            auto m2 = build(m.width(), m.height(), ps);
-            std::cout << ps << m2;
-        }
-        EXPECT_TRUE(check(ps, m));
-    }
-}
-
 TEST(M3x3, many) {
     for (int i = 0; i < 100; ++i) {
         auto m = generate(3,3);
@@ -149,4 +167,23 @@ TEST(M3x3, many) {
         }
         EXPECT_TRUE(check(ps, m));
     }
+}
+
+TEST(M4x4, many) {
+    for (int i = 0; i < 10; ++i) {
+        auto m = generate(4,4);
+        std::cout << m;
+        auto ps = solve(m);
+        if (!check(ps, m)) {
+            auto m2 = build(m.width(), m.height(), ps);
+            std::cout << ps << m2;
+        }
+        EXPECT_TRUE(check(ps, m));
+    }
+}
+
+TEST(Big, first) {
+        auto m = generate(10,10);
+        auto ps = solve(m);
+        //EXPECT_TRUE(check(ps, m));
 }
