@@ -156,10 +156,35 @@ TEST(M3x3, segfault) {
     EXPECT_TRUE(check(ps, m));
 }
 
+TEST(M3x3, fault) {
+    Matrix<int> m{3, 3};
+    m[{0,0}] = 1;
+    m[{1,0}] = 3;
+    m[{2,0}] = 1;
+
+    m[{0,1}] = 3;
+    m[{1,1}] = 1;
+    m[{2,1}] = 2;
+
+    m[{0,2}] = 1;
+    m[{1,2}] = 3;
+    m[{2,2}] = 2;
+    std::cout << m;
+
+    auto ps = solve(m);
+    std::cout << ps;
+
+    auto m2 = build(m.width(), m.height(), ps);
+    std::cout << m2;
+
+    EXPECT_TRUE(check(ps, m));
+}
+
+
 TEST(M3x3, many) {
     for (int i = 0; i < 1000; ++i) {
         auto m = generate(3,3);
-        std::cout << "Generated:" << m;
+        std::cout << i << " Generated:" << m;
         auto ps = solve(m);
         if (!check(ps, m)) {
             auto m2 = build(m.width(), m.height(), ps);
@@ -170,9 +195,9 @@ TEST(M3x3, many) {
 }
 
 TEST(M4x4, many) {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         auto m = generate(4,4);
-        std::cout << "Generated:" << m;
+        std::cout << i << " Generated:" << m;
         auto ps = solve(m);
         if (!check(ps, m)) {
             auto m2 = build(m.width(), m.height(), ps);
@@ -183,7 +208,7 @@ TEST(M4x4, many) {
 }
 
 TEST(Big, first) {
-        auto m = generate(10,10);
+        auto m = generate(100,100);
         auto ps = solve(m);
         EXPECT_TRUE(check(ps, m));
 }
