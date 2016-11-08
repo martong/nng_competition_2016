@@ -5,7 +5,7 @@
 //#include "Neighbors.hpp"
 //#include "solution.hpp"
 //#include "MatrixIO.hpp"
-#include "all.hpp"
+#include "all.cpp"
 
 using namespace ::testing;
 
