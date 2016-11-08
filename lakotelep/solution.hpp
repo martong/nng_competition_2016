@@ -72,7 +72,7 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
             if (v >= 1) ++v;
             if (v > 4) { v = 1;
                 auto it = std::find(st.begin(), st.end(), n);
-                if (it == std::end(st)) {
+                if (!st.empty() && it == std::end(st)) {
                     st.push_back(n);
                 }
             }
