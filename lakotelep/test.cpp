@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "generator.hpp"
-#include "Neighbors.hpp"
-#include "solution.hpp"
-#include "MatrixIO.hpp"
+//#include "generator.hpp"
+//#include "Neighbors.hpp"
+//#include "solution.hpp"
+//#include "MatrixIO.hpp"
+#include "all.hpp"
 
 using namespace ::testing;
 

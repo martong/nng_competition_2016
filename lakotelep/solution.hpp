@@ -73,7 +73,6 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
         m[p] = 1;
         st = stc;
 
-        //assert(st == stc);
         assert(m == mc);
         assert(result == resultc);
     }
