@@ -208,8 +208,26 @@ TEST(M4x4, many) {
     }
 }
 
-TEST(Big, first) {
-        auto m = generate(10,10);
+TEST(M5x4, many) {
+    for (int i = 0; i < 1000; ++i) {
+        auto m = generate(5,4);
+        std::cout << i << " Generated:" << m;
         auto ps = solve(m);
-        EXPECT_TRUE(check(ps, m));
+        if (!check(ps, m)) {
+            auto m2 = build(m.width(), m.height(), ps);
+            std::cout << "Result:" << ps << "Result generates:" << m2;
+        }
+        ASSERT_TRUE(check(ps, m));
+    }
+}
+
+TEST(Big, seq) {
+    for (int N = 5; N < 10; ++N) {
+        for (int i = 0; i < 10; ++i) {
+            auto m = generate(N, N);
+            std::cout << i << " Generated:" << m;
+            auto ps = solve(m);
+            EXPECT_TRUE(check(ps, m));
+        }
+    }
 }
