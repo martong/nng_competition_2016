@@ -650,3 +650,16 @@ std::vector<Point> solveX(Matrix<int> m) {
 
     return final_result;
 }
+
+void CalculateBuildOrder(const std::vector<std::vector<int>>& buildings, std::vector<std::pair<size_t, size_t>>& solution) {
+    Matrix<int> m(buildings.at(0).size(), buildings.size());
+    for (int i = 0; i < buildings.size(); ++i){
+        for (int j = 0; j < buildings[i].size(); ++j) {
+            m[{j,i}] = buildings[i][j];
+        }
+    }
+    auto result = solve(m);
+    for (const auto& e : result) {
+        solution.emplace_back(e.y, e.x);
+    }
+}
