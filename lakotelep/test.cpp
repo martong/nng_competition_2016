@@ -208,7 +208,7 @@ TEST(M4x4, many) {
 }
 
 TEST(Big, first) {
-        auto m = generate(100,100);
+        auto m = generate(10,10);
         auto ps = solve(m);
         EXPECT_TRUE(check(ps, m));
 }

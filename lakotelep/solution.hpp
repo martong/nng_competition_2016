@@ -50,7 +50,7 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
         m[p] = 0;
         result.push_back(p);
 
-        std::vector<Point> st3;
+        //std::vector<Point> diff;
 
         auto ns = getNeigbors(m, p);
         for (const auto& n : ns) {
@@ -59,7 +59,7 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
                 m[n] = 4;
                 st.erase(std::remove(st.begin(), st.end(), n), st.end());
                 //auto it = std::remove(st.begin(), st.end(), n);
-                //std::copy(it, st.end(), std::back_inserter(st3));
+                //std::copy(it, st.end(), std::back_inserter(diff));
                 //st.erase(it, st.end());
             }
             if (m[n] < 0) m[n] = 0;
@@ -95,7 +95,7 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
                 //}
             }
         }
-        std::copy(st3.begin(), st3.end(), std::back_inserter(st));
+        //std::copy(diff.begin(), diff.end(), std::back_inserter(st));
 
         result.pop_back();
         m[p] = 1;
