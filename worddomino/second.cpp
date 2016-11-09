@@ -123,13 +123,26 @@ Result calculate(const std::vector<std::string>& words) {
 }
 
 int main(int argc, char* argv[]) {
-
-    if (argc == 2 && std::string{argv[1]} == "-v") {
-        verbose = true;
+    bool runOne = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string{argv[i]} == "-v") {
+            verbose = true;
+        } else if (std::string{argv[i]} == "-1") {
+            runOne = true;
+        }
     }
 
-
     const std::vector<std::string> words = readWords(std::cin);
+    if (runOne) {
+        auto result = calculate(words);
+        std::ofstream of{"output.txt",
+                std::ios::out | std::ios::trunc};
+        for (const auto& element : result.wordSequence) {
+            of << words[element.first] << "\n";
+        }
+        return 0;
+    }
+
     std::size_t bestSize = 0;
     util::ThreadPool threadPool{8};
     auto& ioService = threadPool.getIoService();
