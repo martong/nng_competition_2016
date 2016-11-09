@@ -627,7 +627,8 @@ bool solve2impl(std::vector<Point>& st, Matrix<int>& m,
     // if (marked[m]) { std::cout << "MARKED\n"; return {}; }
     // marked[m] = true;
 
-    // std::cout << m;
+    std::cout << "pathsize: " << path.size() << "/" << m.size() << std::endl;
+    std::cout << m;
 
     assert(m.size() > 0);
     if (path.size() == m.size()) {
@@ -689,24 +690,8 @@ bool solve2impl(std::vector<Point>& st, Matrix<int>& m,
                 // std::cout << "CUT1\n";
                 continue;
             }
-            if (sum_nns == 0 && m[n] == 1) {
+            if (sum_nns == 0 && m[n] == 1) { // BAD??
                 // std::cout << "CUT2\n";
-                continue;
-            }
-            // From Peti
-            // elszigetelt 2-es vagy annal nagyobb
-            if (m[n] >= 2 && nns.size() == 0) {
-                // std::cout << "CUT3\n";
-                continue;
-            }
-            // - 3-as vagy 4-es aminek 1 szomszedja van.
-            if (m[n] >= 3 && nns.size() == 1) {
-                // std::cout << "CUT4\n";
-                continue;
-            }
-            // - 4-es aminek 2 szomszedja van.
-            if (m[n] >= 4 && nns.size() == 2) {
-                // std::cout << "CUT5\n";
                 continue;
             }
         }
@@ -725,17 +710,91 @@ bool solve2impl(std::vector<Point>& st, Matrix<int>& m,
     return false;
 }
 
+struct Resolution {
+    Resolution(Matrix<int>& m, std::vector<Point>& st, std::vector<Point>& path,
+               std::vector<Point>& result)
+        : m(m), st(st), path(path), result(result) {}
+    Matrix<int>& m;
+    std::vector<Point>& st;
+    std::vector<Point>& path;
+    std::vector<Point>& result;
+};
+
+bool flood(std::vector<Point> st, Matrix<int>& m,
+                std::vector<Point>& path, std::unordered_map<Matrix<int>, bool>& marked) {
+    //if (marked[m]) return false;
+    marked[m] = true;
+
+    //std::cout << m;
+    std::vector<Point> nst;
+    while (!st.empty()) {
+        auto p = st.back();
+        st.pop_back();
+        if (m[p] != 1 ) { continue; }
+
+        m[p] = 0;
+        path.push_back(p);
+        auto ns = getNeigbors(m, p);
+        for (const auto& n : ns) {
+            --m[n];
+            if (m[n] == 0) {
+                m[n] = 4;
+            }
+            if (m[n] < 0) m[n] = 0;
+            if (m[n] == 1) nst.push_back(n);
+        }
+
+        if (marked[m]) { std::cout << "MARKED\n"; continue; }
+
+        // Cut offs
+        for (const auto& n : ns) {
+            auto nns = getNeigbors(m, n);
+            auto sum_nns = 0;
+            for (const auto& nn : nns) {
+                sum_nns += m[nn];
+            }
+            if (sum_nns < m[n] - 1) {
+                std::cout << "CUT1\n";
+                return false;
+            }
+        }
+
+        auto fallback = !flood(nst, m, path, marked);
+        if (fallback) { return false; }
+    }
+    return true;
+}
+
+bool solve3impl(std::vector<Point> st, Matrix<int> m, std::vector<Point>& path,
+                std::vector<Point>& result,
+                std::unordered_map<Matrix<int>, bool>& marked) {
+    std::sort(st.begin(), st.end());
+    do {
+        auto st_ = st;
+        std::cout << st_;
+        auto m_ = m;
+        auto path_ = path;
+        auto fallback = false;
+        while (!st_.empty()) {
+            auto p = st_.back();
+            st_.pop_back();
+            fallback = !flood({p}, m_, path_, marked);
+            if (fallback) break;
+        }
+        std::cout << m_;
+        std::cout << path_.size() << "/" << m.size() << std::endl;
+        if (path_.size() == m.size()) { path = path_; return true; }
+    } while (std::next_permutation(st.begin(), st.end()));
+    return false;
+}
+
 std::vector<Point> solve(Matrix<int> m) {
     std::unordered_map<Matrix<int>, bool> marked;
     std::vector<Point> st;
     std::vector<Point> path;
     std::vector<Point> result;
-    for (int i = 1; i < m.width() - 1; ++i) {
-        for (int j = 1; j < m.height() - 1; ++j) {
-            Point p{j, i};
-            if (m[p] == 1) st.push_back(p);
-        }
-    }
+
+    // gather 1s at the edges
     for (int i = 0; i < m.width(); ++i) {
         {
             Point p0{i, 0};
@@ -756,9 +815,28 @@ std::vector<Point> solve(Matrix<int> m) {
             if (m[pN] == 1) st.push_back(pN);
         }
     }
-    solve2impl(st, m, path, result, marked);
-    std::reverse(result.begin(), result.end());
-    return result;
+    flood(st, m, path, marked);
+
+    st.clear();
+    for (int i = 1; i < m.width() - 1; ++i) {
+        for (int j = 1; j < m.height() - 1; ++j) {
+            Point p{j, i};
+            if (m[p] == 1) st.push_back(p);
+        }
+    }
+
+    //solve2impl(st, m, path, result, marked);
+
+    //Resolution r{m, st, path, result};
+    //solve3impl(r);
+    //std::vector<Point> path2 = path;
+    solve3impl(st, m, path, result, marked);
+
+    std::reverse(path.begin(), path.end());
+    return path;
+
+    //std::reverse(result.begin(), result.end());
+    //return result;
 }
 
 void CalculateBuildOrder(const std::vector<std::vector<int>>& buildings, std::vector<std::pair<size_t, size_t>>& solution) {

@@ -221,6 +221,13 @@ TEST(M5x4, many) {
     }
 }
 
+TEST(Big, xxx) {
+    auto m = generate(9, 9);
+    std::cout << " Generated:" << m;
+    auto ps = solve(m);
+    EXPECT_TRUE(check(ps, m));
+}
+
 TEST(Big, seq) {
     for (int N = 5; N < 10; ++N) {
         for (int i = 0; i < 10; ++i) {
