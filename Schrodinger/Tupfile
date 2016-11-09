@@ -1,0 +1,12 @@
+include_rules
+
+include $(COMPILE_TUP)
+
+#INCLUDE_DIRS += -I$(UTIL_DIR) -I$(CPP_UTIL_DIR)/include
+#LIBS += -lboost_program_options -lpthread -lboost_system -lboost_thread
+
+: foreach checker.cpp solution.cpp |> !cxx |>
+
+include $(LINK_TUP)
+
+: *.o |> !linker |> schrodinger

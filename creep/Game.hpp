@@ -2,9 +2,9 @@
 #define CREEP_GAME_HPP
 
 #include "Command.hpp"
+#include "GameInfo.hpp"
 #include "Status.hpp"
 
-#include <istream>
 #include <ostream>
 #include <map>
 
@@ -12,6 +12,7 @@ class Game {
 public:
     using Commands = std::multimap<int, Command>;
 
+    Game(const GameInfo& gameInfo);
     Game(std::istream& stream);
 
     Game(const Game& other) : timeLimit(other.timeLimit),

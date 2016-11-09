@@ -6,12 +6,8 @@
 
 #include <boost/range/iterator_range.hpp>
 
-Game::Game(std::istream& stream) {
-    std::size_t width = 0;
-    std::size_t height = 0;
-    stream >> timeLimit >> width >> height;
-    while (stream.get() != '\n') {}
-    status = Status{stream, width, height};
+Game::Game(const GameInfo& gameInfo) : timeLimit(gameInfo.timeLimit),
+        status(gameInfo) {
 }
 
 void Game::removeCommand(const Command& command) {

@@ -1,3 +1,6 @@
+#include <util/ThreadPool.hpp>
+
+#include <boost/optional.hpp>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -7,6 +10,11 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <mutex>
+#include <random>
+#include <fstream>
+
+thread_local std::mt19937 rng{std::random_device{}()};
 
 std::vector<std::string> readWords(std::istream& inputStream) {
     std::vector<std::string> words;
@@ -18,7 +26,7 @@ std::vector<std::string> readWords(std::istream& inputStream) {
     return words;
 }
 
-std::size_t findBestMatch(std::size_t wordIndex,
+boost::optional<std::size_t> findBestMatch(std::size_t wordIndex,
         const std::vector<std::string>& words,
         const std::unordered_set<std::size_t>& unusedWords,
         std::size_t& matchLength) {
@@ -29,49 +37,115 @@ std::size_t findBestMatch(std::size_t wordIndex,
         std::string wordFragment = word.substr(i);
         auto matchIterator = std::lower_bound(words.begin(),
                 words.end(), wordFragment);
+        std::vector<std::size_t> possibleMatches;
         while (matchIterator != words.end() &&
                 0 == matchIterator->find(wordFragment)) {
             std::size_t index = std::distance(words.begin(), matchIterator);
             if (*matchIterator != word && unusedWords.count(index) > 0) {
-                return index;
+                possibleMatches.push_back(index);
             }
             ++matchIterator;
         }
+        if (!possibleMatches.empty()) {
+            return possibleMatches[std::uniform_int_distribution<std::size_t>{
+                    0, possibleMatches.size() - 1}(rng)];
+        }
     }
 
-    return 0; // 0 is the first element we used, so it means a no match here
+    return boost::none;
 }
 
-int main(int argc, char* argv[]) {
+bool verbose = false;
 
-    bool verbose = false;
-    if (argc == 2 && std::string{argv[1]} == "-v") {
-        verbose = true;
-    }
-
-    const std::vector<std::string> words = readWords(std::cin);
+std::string calculate(const std::vector<std::string>& words) {
     std::unordered_set<std::size_t> unusedWords;
     for (std::size_t i = 0; i < words.size(); ++i) {
         unusedWords.insert(i);
     }
 
-    std::size_t wordIndex = 0;
+    std::size_t wordIndex = std::uniform_int_distribution<std::size_t>{
+            0, words.size() - 1}(rng);
     std::size_t matchLength = 0;
     std::string output;
+    std::vector<std::pair<std::size_t, std::size_t>> wordSequence;
+    std::size_t noMatch = 0;
     while (!unusedWords.empty()) {
-        if (!verbose) {
-            std::cout << words[wordIndex].substr(matchLength);
-        } else {
-            output += words[wordIndex].substr(matchLength);
+        if (verbose) {
             std::cerr << words[wordIndex] << '(' << matchLength << ')' << " + ";
         }
+        output += words[wordIndex].substr(matchLength);
         unusedWords.erase(wordIndex);
-        wordIndex = findBestMatch(wordIndex, words, unusedWords, matchLength);
-        if (wordIndex == 0 && !unusedWords.empty()) {
-            wordIndex = *unusedWords.begin();
+        wordSequence.push_back(std::make_pair(wordIndex, matchLength));
+        auto nextWord = findBestMatch(wordIndex, words, unusedWords, matchLength);
+        if (nextWord) {
+            wordIndex = *nextWord;
+        } else if (!unusedWords.empty()) {
+            ++noMatch;
+            std::vector<std::size_t> remainingWords;
+            remainingWords.reserve(unusedWords.size());
+            std::copy(unusedWords.begin(), unusedWords.end(),
+                    std::back_inserter(remainingWords));
+            wordIndex = remainingWords[std::uniform_int_distribution<
+                    std::size_t>{0, remainingWords.size() - 1}(rng)];
             matchLength = 0; // just to be sure
         }
     }
-    std::cerr << std::endl;
-    std::cout << output << std::endl;
+    std::cerr << std::endl << "number of no matches: " << noMatch <<
+            ". Length: " << output.size() << std::endl;
+
+    assert(wordSequence.size() == words.size());
+    std::vector<std::pair<std::size_t, std::size_t>> uniqueSequence;
+    std::unique_copy(wordSequence.begin(), wordSequence.end(),
+            std::back_inserter(uniqueSequence),
+            [](std::pair<std::size_t, std::size_t> a,
+                    std::pair<std::size_t, std::size_t> b) {
+                return a.first == b.first;
+            });
+    assert(uniqueSequence.size() == wordSequence.size());
+
+    std::size_t pos = 0;
+    for (const auto& elem : wordSequence) {
+        const std::string& word = words[elem.first];
+        std::size_t wordSize = word.size();
+        pos -= elem.second;
+        assert(word == output.substr(pos, wordSize));
+        pos += wordSize;
+    }
+
+    assert(100000 == words.size());
+    assert(100000 == wordSequence.size());
+
+    return output;
+}
+
+int main(int argc, char* argv[]) {
+
+    if (argc == 2 && std::string{argv[1]} == "-v") {
+        verbose = true;
+    }
+
+
+    const std::vector<std::string> words = readWords(std::cin);
+    std::string bestOutput;
+    util::ThreadPool threadPool{8};
+    auto& ioService = threadPool.getIoService();
+    while (true) {
+        threadPool.start();
+        std::mutex mutex;
+        for (std::size_t i = 0; i < words.size(); ++i) {
+            ioService.post(
+                    [&bestOutput, &words, &mutex]() {
+                        auto output = calculate(words);
+                        std::unique_lock<std::mutex> lock{mutex};
+                        if (bestOutput.size() == 0 ||
+                                bestOutput.size() > output.size()) {
+                            bestOutput = output;
+                            std::ofstream of{"output.txt",
+                                    std::ios::out | std::ios::trunc};
+                            of << output << "\n";
+                        }
+                    });
+        }
+        threadPool.wait();
+    }
 }

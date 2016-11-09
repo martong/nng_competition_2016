@@ -100,7 +100,7 @@ int main(int argc, const char* argv[]) {
             {"simulate", simulate},
             {"solve", solve}};
     std::ifstream inputFile{options.inputFileName};
-    Game game{inputFile};
+    Game game{loadGameInfo(inputFile)};
     inputFile.close();
     actions.at(options.type)(game, options);
 }
