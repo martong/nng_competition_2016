@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <algorithm>
 #include <unordered_map>
+#include <cassert>
 
 // Direction.hpp
 #include <iosfwd>
@@ -110,6 +111,30 @@ int distanceSquare(Point p1, Point p2) {
 
 std::ostream& operator<<(std::ostream& os, Point p);
 Direction toDirection(const Point& source, const Point& destination);
+std::ostream& operator<<(std::ostream& os, Point p) {
+    os << '(' << p.x << ", " << p.y << ')';
+    return os;
+}
+
+Direction toDirection(const Point& source, const Point& destination) {
+    Point diff = destination - source;
+    if (diff == p10) {
+        return Direction::right;
+    } else if (diff == p01) {
+        return Direction::down;
+    } else if (diff == p11) {
+        assert(false);
+    } else if (diff*-1 == p10) {
+        return Direction::left;
+    } else if (diff*-1 == p01) {
+        return Direction::up;
+    } else if (diff*-1 == p11) {
+        assert(false);
+    } else {
+        assert(false);
+    }
+    assert(false);
+}
 
 namespace std {
 
@@ -503,6 +528,7 @@ std::ostream& operator<<(std::ostream& os, const std::vector<Point>& ps) {
     os << "\n";
     return os;
 }
+
 std::ostream& operator<<(std::ostream& os, std::stack<Point> ps) {
     while (!ps.empty()) {
         auto p = ps.top();
@@ -595,8 +621,12 @@ bool check(const std::vector<Point>& ps, const Matrix<int>& expected) {
 }
 
 std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
-                              std::vector<Point>& result, std::unordered_map<std::vector<Point>, bool>& marked) {
-    //marked[result] = true;
+                              std::vector<Point>& result, std::unordered_map<Matrix<int>, bool>& marked) {
+
+    //if (marked[m]) { std::cout << "MARKED\n"; return {}; }
+    //marked[m] = true;
+
+    //std::cout << m;
 
     assert(m.size() > 0);
     if (result.size() == m.size()) {
@@ -636,8 +666,6 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
             assert(result == resultc);
         });
 
-        // TODO could go right after result.push_back
-        //if (marked[result]) { std::cout << "MARKED\n"; continue; }
 
         for (const auto& n : ns) {
             --m[n];
@@ -651,6 +679,7 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
         }
 
 
+
         // Cut offs
         for (const auto& n : ns) {
             auto nns = getNeigbors(m, n);
@@ -659,22 +688,27 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
                 sum_nns += m[nn];
             }
             if (sum_nns < m[n] - 1) {
+                //std::cout << "CUT1\n";
                 continue;
             }
             if (sum_nns == 0 && m[n] == 1) {
+                //std::cout << "CUT2\n";
                 continue;
             }
             // From Peti
             // elszigetelt 2-es vagy annal nagyobb
             if (m[n] >= 2 && nns.size() == 0) {
+                //std::cout << "CUT3\n";
                 continue;
             }
             // - 3-as vagy 4-es aminek 1 szomszedja van.
             if (m[n] >= 3 && nns.size() == 1) {
+                //std::cout << "CUT4\n";
                 continue;
             }
             // - 4-es aminek 2 szomszedja van.
             if (m[n] >= 4 && nns.size() == 2) {
+                //std::cout << "CUT5\n";
                 continue;
             }
         }
@@ -687,12 +721,15 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
 
         // restore
     }
+
+    //std::cout << m;
+    //std::cout << "FALLBACK\n";
     return {};
 }
 
 
 std::vector<Point> solve(Matrix<int> m) {
-    std::unordered_map<std::vector<Point>, bool> marked;
+    std::unordered_map<Matrix<int>, bool> marked;
     std::vector<Point> st;
     std::vector<Point> result;
     for (int i = 1; i < m.width() - 1; ++i) {
