@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <algorithm>
-
+#include <unordered_map>
 
 // Direction.hpp
 #include <iosfwd>
@@ -347,6 +347,17 @@ struct hash<Matrix<T>> {
     }
 };
 
+template <>
+struct hash<std::vector<Point>> {
+    size_t operator()(const std::vector<Point>& arr) const {
+        size_t seed = 0;
+        for (size_t i = 0; i < arr.size(); ++i) {
+            hash_combine(seed, arr[i]);
+        }
+        return seed;
+    }
+};
+
 }
 
 #include <iostream>
@@ -584,7 +595,9 @@ bool check(const std::vector<Point>& ps, const Matrix<int>& expected) {
 }
 
 std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
-                              std::vector<Point>& result) {
+                              std::vector<Point>& result, std::unordered_map<std::vector<Point>, bool>& marked) {
+    //marked[result] = true;
+
     assert(m.size() > 0);
     if (result.size() == m.size()) {
         return result;
@@ -594,6 +607,7 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
 
         auto p = st.back();
         st.pop_back();
+
 
         auto stc = st;
         auto mc = m;
@@ -606,7 +620,7 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
 
         auto ns = getNeigbors(m, p);
 
-        auto restorer = util::finally([&](){
+        auto restorer = util::finally([&]() {
             for (const auto& n : ns) {
                 auto& v = m[n];
                 if (v >= 1) ++v;
@@ -622,6 +636,9 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
             assert(result == resultc);
         });
 
+        // TODO could go right after result.push_back
+        //if (marked[result]) { std::cout << "MARKED\n"; continue; }
+
         for (const auto& n : ns) {
             --m[n];
             if (m[n] == 0) {
@@ -633,18 +650,37 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
             if (m[n] == 1) st.push_back(n);
         }
 
+
+        // Cut offs
         for (const auto& n : ns) {
             auto nns = getNeigbors(m, n);
             auto sum_nns = 0;
-            for (const auto& nn: nns) {
+            for (const auto& nn : nns) {
                 sum_nns += m[nn];
             }
-            if (sum_nns < m[n] - 1) { continue; }
-            if (sum_nns == 0 && m[n] == 1) { continue; }
+            if (sum_nns < m[n] - 1) {
+                continue;
+            }
+            if (sum_nns == 0 && m[n] == 1) {
+                continue;
+            }
+            // From Peti
+            // elszigetelt 2-es vagy annal nagyobb
+            if (m[n] >= 2 && nns.size() == 0) {
+                continue;
+            }
+            // - 3-as vagy 4-es aminek 1 szomszedja van.
+            if (m[n] >= 3 && nns.size() == 1) {
+                continue;
+            }
+            // - 4-es aminek 2 szomszedja van.
+            if (m[n] >= 4 && nns.size() == 2) {
+                continue;
+            }
         }
 
         // recurse
-        auto r = solve2impl(st, m, result);
+        auto r = solve2impl(st, m, result, marked);
         if (!r.empty()) {
             return r;
         }
@@ -654,7 +690,9 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
     return {};
 }
 
+
 std::vector<Point> solve(Matrix<int> m) {
+    std::unordered_map<std::vector<Point>, bool> marked;
     std::vector<Point> st;
     std::vector<Point> result;
     for (int i = 1; i < m.width() - 1; ++i) {
@@ -683,7 +721,7 @@ std::vector<Point> solve(Matrix<int> m) {
             if (m[pN] == 1) st.push_back(pN);
         }
     }
-    auto r = solve2impl(st, m, result);
+    auto r = solve2impl(st, m, result, marked);
     std::reverse(r.begin(), r.end());
     return r;
 }
