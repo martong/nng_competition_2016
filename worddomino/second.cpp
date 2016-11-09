@@ -1,7 +1,6 @@
 #include <util/ThreadPool.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -36,16 +35,6 @@ struct Match {
     std::size_t overshoot;
     int goodness;
 };
-
-bool doesMatch(const std::string& first, const std::string& second,
-        std::size_t matchLength) {
-    for (std::size_t i = 0; i != matchLength; ++i) {
-        if (first[first.size() - matchLength + i] != second[i]) {
-            return false;
-        }
-    }
-    return true;
-}
 
 boost::optional<std::size_t> findBestMatch(std::size_t wordIndex,
         const std::vector<std::string>& words,
