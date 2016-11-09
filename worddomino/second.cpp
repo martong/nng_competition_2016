@@ -29,11 +29,11 @@ std::vector<std::string> readWords(std::istream& inputStream) {
 struct Match {
     Match(std::size_t index, std::size_t overlap, std::size_t overshoot) :
             index(index), overlap(overlap), overshoot(overshoot),
-            goodness(overlap) {}
+            cost(-overlap) {}
     std::size_t index;
     std::size_t overlap;
     std::size_t overshoot;
-    int goodness;
+    int cost;
 };
 
 boost::optional<std::size_t> findBestMatch(std::size_t wordIndex,
@@ -63,21 +63,19 @@ boost::optional<std::size_t> findBestMatch(std::size_t wordIndex,
     }
     std::sort(matches.begin(), matches.end(),
             [](const Match& lhs, const Match& rhs) {
-                return lhs.goodness < rhs.goodness;
+                return lhs.cost < rhs.cost;
             });
-    auto it = --matches.end();
-    while (it != matches.begin() && it->goodness == matches.back().goodness) {
-        --it;
+    auto it = matches.begin();
+    while (it != matches.end() && it->cost == matches.front().cost) {
+        ++it;
     }
-    int numberOfMatches = std::distance(it, matches.end());
-    assert(numberOfMatches > 0);
+    int difference = std::distance(matches.begin(), it);
     Match* bestMatch = nullptr;
-    if (numberOfMatches == 1) {
-        bestMatch = &matches.back();
+    if (difference == 0) {
+        bestMatch = &matches.front();
     } else {
-        std::uniform_int_distribution<int> matchChooser{0, numberOfMatches - 1};
-        assert(it < matches.end());
-        bestMatch = &*(it + matchChooser(rng));
+        std::uniform_int_distribution<int> matchChooser{0, difference - 1};
+        bestMatch = &matches[matchChooser(rng)];
     }
     assert(bestMatch);
     matchLength = bestMatch->overlap;
