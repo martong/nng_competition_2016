@@ -657,10 +657,30 @@ std::vector<Point> solve2impl(std::vector<Point>& st, Matrix<int>& m,
 std::vector<Point> solve(Matrix<int> m) {
     std::vector<Point> st;
     std::vector<Point> result;
-    for (int i = 0; i < m.width(); ++i) {
-        for (int j = 0; j < m.height(); ++j) {
+    for (int i = 1; i < m.width() - 1; ++i) {
+        for (int j = 1; j < m.height() - 1; ++j) {
             Point p{j, i};
             if (m[p] == 1) st.push_back(p);
+        }
+    }
+    for (int i = 0; i < m.width(); ++i) {
+        {
+            Point p0{i, 0};
+            if (m[p0] == 1) st.push_back(p0);
+        }
+        {
+            Point pN(i, m.height() - 1);
+            if (m[pN] == 1) st.push_back(pN);
+        }
+    }
+    for (int j = 1; j < m.height() - 1; ++j) {
+        {
+            Point p0{0, j};
+            if (m[p0] == 1) st.push_back(p0);
+        }
+        {
+            Point pN(m.width() - 1, j);
+            if (m[pN] == 1) st.push_back(pN);
         }
     }
     auto r = solve2impl(st, m, result);
