@@ -59,12 +59,10 @@ boost::optional<std::size_t> findBestMatch(std::size_t wordIndex,
         std::string wordFragment = word.substr(i);
         auto matchIterator = std::lower_bound(words.begin(),
                 words.end(), wordFragment);
-        std::vector<std::size_t> possibleMatches;
         while (matchIterator != words.end() &&
                 0 == matchIterator->find(wordFragment)) {
             std::size_t index = std::distance(words.begin(), matchIterator);
             if (*matchIterator != word && unusedWords.count(index) > 0) {
-                possibleMatches.push_back(index);
                 matches.emplace_back(index, currentMatchLength,
                         matchIterator->size() - currentMatchLength);
             }
