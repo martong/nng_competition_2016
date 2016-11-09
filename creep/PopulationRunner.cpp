@@ -5,9 +5,8 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include "Genome.hpp"
 #include "AsyncHelper.hpp"
-#include "Line2.hpp"
-#include "Track/Track.hpp"
 #include "FitnessCalculator.hpp"
+#include "Table.hpp"
 
 PopulationRunner::PopulationRunner(const LearningParameters& parameters,
         const std::vector<Table>& tracks,

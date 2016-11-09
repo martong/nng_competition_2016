@@ -3,7 +3,7 @@
 #define CREEP_LEARNINGCONTROLLER_HPP
 
 #include <functional>
-#include "Track/TrackCreator.hpp"
+#include "Table.hpp"
 #include "LearningParameters.hpp"
 
 namespace boost { namespace asio {
@@ -19,7 +19,7 @@ class Genome;
 class LearningController {
 public:
     LearningController(const LearningParameters& parameters,
-            std::vector<std::shared_ptr<const track::Track>> tracks,
+            std::vector<Table> tracks,
             boost::asio::io_service& ioService);
     void run();
 
@@ -29,7 +29,7 @@ private:
 
     boost::asio::io_service& ioService;
     LearningParameters parameters;
-    std::vector<std::shared_ptr<const track::Track>> tracks;
+    std::vector<Table> tracks;
 
     void saveNeuralNetwork(const Genome& genome);
 };
