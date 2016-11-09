@@ -1,6 +1,7 @@
 #include <util/ThreadPool.hpp>
 
 #include <boost/optional.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -26,14 +27,35 @@ std::vector<std::string> readWords(std::istream& inputStream) {
     return words;
 }
 
+struct Match {
+    Match(std::size_t index, std::size_t overlap, std::size_t overshoot) :
+            index(index), overlap(overlap), overshoot(overshoot),
+            goodness(overlap) {}
+    std::size_t index;
+    std::size_t overlap;
+    std::size_t overshoot;
+    int goodness;
+};
+
+bool doesMatch(const std::string& first, const std::string& second,
+        std::size_t matchLength) {
+    for (std::size_t i = 0; i != matchLength; ++i) {
+        if (first[first.size() - matchLength + i] != second[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 boost::optional<std::size_t> findBestMatch(std::size_t wordIndex,
         const std::vector<std::string>& words,
         const std::unordered_set<std::size_t>& unusedWords,
         std::size_t& matchLength) {
     const std::string& word = words[wordIndex];
 
+    std::vector<Match> matches;
     for (std::size_t i = 0; i < word.size(); ++i) {
-        matchLength = word.size() - i;
+        std::size_t currentMatchLength = word.size() - i;
         std::string wordFragment = word.substr(i);
         auto matchIterator = std::lower_bound(words.begin(),
                 words.end(), wordFragment);
@@ -43,16 +65,37 @@ boost::optional<std::size_t> findBestMatch(std::size_t wordIndex,
             std::size_t index = std::distance(words.begin(), matchIterator);
             if (*matchIterator != word && unusedWords.count(index) > 0) {
                 possibleMatches.push_back(index);
+                matches.emplace_back(index, currentMatchLength,
+                        matchIterator->size() - currentMatchLength);
             }
             ++matchIterator;
         }
-        if (!possibleMatches.empty()) {
-            return possibleMatches[std::uniform_int_distribution<std::size_t>{
-                    0, possibleMatches.size() - 1}(rng)];
-        }
     }
-
-    return boost::none;
+    if (matches.empty()) {
+        return boost::none;
+    }
+    std::sort(matches.begin(), matches.end(),
+            [](const Match& lhs, const Match& rhs) {
+                return lhs.goodness < rhs.goodness;
+            });
+    auto it = --matches.end();
+    while (it != matches.begin() && it->goodness == matches.back().goodness) {
+        --it;
+    }
+    int numberOfMatches = std::distance(it, matches.end());
+    assert(numberOfMatches > 0);
+    Match* bestMatch = nullptr;
+    if (numberOfMatches == 1) {
+        bestMatch = &matches.back();
+    } else {
+        std::uniform_int_distribution<int> matchChooser{0, numberOfMatches - 1};
+        assert(it < matches.end());
+        bestMatch = &*(it + matchChooser(rng));
+    }
+    assert(bestMatch);
+    matchLength = bestMatch->overlap;
+    //std::cerr << word << " (" << wordIndex << ") -- " << words[bestMatch->index] << " (" << bestMatch->index << "): overlap=" << bestMatch->overlap << "\n";
+    return bestMatch->index;
 }
 
 bool verbose = false;
@@ -68,6 +111,7 @@ Result calculate(const std::vector<std::string>& words) {
         unusedWords.insert(i);
     }
 
+    //std::size_t percent = words.size() / 100;
     std::size_t wordIndex = std::uniform_int_distribution<std::size_t>{
             0, words.size() - 1}(rng);
     std::size_t matchLength = 0;
@@ -97,6 +141,7 @@ Result calculate(const std::vector<std::string>& words) {
     std::cerr << std::endl << "number of no matches: " << noMatch <<
             ". Length: " << result.output.size() << std::endl;
 
+
     assert(result.wordSequence.size() == words.size());
     std::vector<std::pair<std::size_t, std::size_t>> uniqueSequence;
     std::unique_copy(result.wordSequence.begin(), result.wordSequence.end(),
@@ -116,22 +161,34 @@ Result calculate(const std::vector<std::string>& words) {
         pos += wordSize;
     }
 
-    assert(100000 == words.size());
-    assert(100000 == result.wordSequence.size());
+    assert(result.wordSequence.size() == words.size());
 
     return result;
 }
 
 int main(int argc, char* argv[]) {
-
-    if (argc == 2 && std::string{argv[1]} == "-v") {
-        verbose = true;
+    bool runOne = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string{argv[i]} == "-v") {
+            verbose = true;
+        } else if (std::string{argv[i]} == "-1") {
+            runOne = true;
+        }
     }
 
-
     const std::vector<std::string> words = readWords(std::cin);
+    if (runOne) {
+        auto result = calculate(words);
+        std::ofstream of{"output.txt",
+                std::ios::out | std::ios::trunc};
+        for (const auto& element : result.wordSequence) {
+            of << words[element.first] << "\n";
+        }
+        return 0;
+    }
+
     std::size_t bestSize = 0;
-    util::ThreadPool threadPool{8};
+    util::ThreadPool threadPool{1};
     auto& ioService = threadPool.getIoService();
     while (true) {
         threadPool.start();
