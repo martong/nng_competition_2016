@@ -4,8 +4,6 @@
 #include "Log.hpp"
 #include "Spread.hpp"
 
-#include <MatrixIO.hpp>
-
 #include <algorithm>
 #include <assert.h>
 
@@ -19,26 +17,19 @@ typename Ts::reference findObjectWithId(Ts& ts, int id) {
 
 } // unnamed namespace
 
-Status::Status(std::istream& stream, std::size_t width, std::size_t height) :
-        table{width, height} {
-    auto matrix = loadMatrix(stream, '#', width, height, true);
-    for (Point p : matrixRange(matrix)) {
-        table[p] = matrix[p] == '.' ? MapElement::Floor : MapElement::Wall;
-    }
-    Point hatcheryPosition;
-    stream >> hatcheryPosition.x >> hatcheryPosition.y;
-
+Status::Status(const GameInfo& gameInfo) : table{gameInfo.table} {
     // place hatchery
-    for (Point p : PointRange{hatcheryPosition,
-            hatcheryPosition + p11 * rules::hatcherySize}) {
+    for (Point p : PointRange{gameInfo.hatcheryPosition,
+            gameInfo.hatcheryPosition + p11 * rules::hatcherySize}) {
         table[p] = MapElement::Building;
     }
-    Point hatcheryCenter = hatcheryPosition + p11 * rules::hatcheryCenterOffset;
+    Point hatcheryCenter = gameInfo.hatcheryPosition +
+            p11 * rules::hatcheryCenterOffset;
     tumors.emplace_back(1, hatcheryCenter, -1);
 
     // place a creep tile
-    for (Point p : PointRange{hatcheryPosition - p11,
-            hatcheryPosition + p11 * 5}) {
+    for (Point p : PointRange{gameInfo.hatcheryPosition - p11,
+            gameInfo.hatcheryPosition + p11 * 5}) {
         if (table[p] == MapElement::Floor) {
             table[p] = 0;
             break;
@@ -47,7 +38,7 @@ Status::Status(std::istream& stream, std::size_t width, std::size_t height) :
 
     floorsRemaining = std::count(table.begin(), table.end(), MapElement::Floor);
     // spread creep until possible
-    while (spreadCreepFrom(hatcheryPosition + p11, 0)) {}
+    while (spreadCreepFrom(gameInfo.hatcheryPosition + p11, 0)) {}
 
     addQueen();
 }

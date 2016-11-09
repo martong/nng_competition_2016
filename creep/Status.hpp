@@ -1,6 +1,7 @@
 #ifndef CREEP_STATUS_HPP
 #define CREEP_STATUS_HPP
 
+#include "GameInfo.hpp"
 #include "Table.hpp"
 
 #include <vector>
@@ -27,7 +28,7 @@ class Status {
 public:
     Status() = default;
 
-    Status(std::istream& stream, std::size_t width, std::size_t height);
+    Status(const GameInfo& gameInfo);
 
     Status(const Status&) = default;
     Status(Status&&) = default;
