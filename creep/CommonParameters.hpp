@@ -1,5 +1,5 @@
-#ifndef SRC_COMMONPARAMETERS_HPP
-#define SRC_COMMONPARAMETERS_HPP
+#ifndef CREEP_COMMONPARAMETERS_HPP
+#define CREEP_COMMONPARAMETERS_HPP
 
 #include <vector>
 #include <string>
@@ -7,21 +7,16 @@
 #include "PerturbationParameters.hpp"
 #include "util/LazyArgumentEnum.hpp"
 
-namespace car {
-
 LAZY_ARGUMENT_ENUM(LookaheadType, lookaheadTypes, (checkpoint))
 
 struct CommonParameters {
-	// for speed
-	constexpr static unsigned extraGlobalInputNeuronCount() { return  1; }
-	// 2 for orientation, 2*(2+1) for left/right edge orientation/distance
-	constexpr static unsigned inputNeuronCountPerCheckpoint() { return  8; }
-	constexpr static unsigned outputNeuronCount() { return 3; }
-
-	unsigned getInputNeuronCount() const {
-		return rayCount + extraGlobalInputNeuronCount() + checkpointLookAhead * inputNeuronCountPerCheckpoint();
-	}
-
+    constexpr static std::initializer_list<int> checkDistances() {
+        return {1, 2, 5, 8, 9, 10, 11, 12, 15, 20};
+    }
+    constexpr static unsigned inputNeuronCount() {
+        return checkDistance().size() * 4 + 2;
+    }
+    constexpr static unsigned outputNeuronCount() { return 1; }
 };
 
 class NeuralNetwork;
@@ -29,7 +24,4 @@ class NeuralNetwork;
 void setNeuralNetworkExternalParameters(const CommonParameters& parameters, NeuralNetwork& neuralNetwork);
 void getNeuralNetworkExternalParameters(CommonParameters& parameters, const NeuralNetwork& neuralNetwork);
 
-}
-
-
-#endif /* SRC_COMMONPARAMETERS_HPP */
+#endif // CREEP_COMMONPARAMETERS_HPP

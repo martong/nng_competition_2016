@@ -9,7 +9,7 @@
 #include "Table.hpp"
 
 PopulationRunner::PopulationRunner(const LearningParameters& parameters,
-        const std::vector<Table>& tracks,
+        const std::vector<GameInfo>& tracks,
         FitnessCalculator& fitnessCalculator,
         boost::asio::io_service& ioService):
             fitnessCalculator(&fitnessCalculator),

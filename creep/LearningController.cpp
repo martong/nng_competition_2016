@@ -1,4 +1,3 @@
-
 #include <unistd.h>
 
 #include <iostream>
@@ -17,11 +16,10 @@
 #include "LearningController.hpp"
 #include "PopulationRunner.hpp"
 #include "Track/Track.hpp"
-#include "lua/Lua.hpp"
 #include "FitnessCalculator.hpp"
 
 LearningController::LearningController(const LearningParameters& parameters,
-        std::vector<std::shared_ptr<const track::Track>> tracks,
+        std::vector<GameInfo> tracks,
         boost::asio::io_service& ioService) :
     ioService(ioService),
     parameters(parameters),

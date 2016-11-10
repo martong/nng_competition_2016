@@ -1,5 +1,5 @@
-#ifndef NEURALNETWORK_HPP
-#define NEURALNETWORK_HPP
+#ifndef CREEP_NEURALNETWORK_HPP
+#define CREEP_NEURALNETWORK_HPP
 
 #include <vector>
 #include <map>
@@ -13,120 +13,116 @@
 #include "NeuronWeights.hpp"
 #include "Legacy/LayeredNeuralNetwork.hpp"
 
-namespace car {
-
 class NeuralNetwork {
 public:
-	NeuralNetwork() = default;
+    NeuralNetwork() = default;
 
-	NeuralNetwork(
-			unsigned hiddenLayerCount,
-			unsigned hiddenLayerNeuronCount,
-			unsigned inputNeuronCount,
-			unsigned outputNeuronCount,
-			bool useRecurrence);
+    NeuralNetwork(
+            unsigned hiddenLayerCount,
+            unsigned hiddenLayerNeuronCount,
+            unsigned inputNeuronCount,
+            unsigned outputNeuronCount,
+            bool useRecurrence);
 
-	static unsigned getWeightCountForNetwork(
-			unsigned hiddenLayerCount,
-			unsigned hiddenLayerNeuronCount,
-			unsigned inputNeuronCount,
-			unsigned outputNeuronCount,
-			bool useRecurrence);
+    static unsigned getWeightCountForNetwork(
+            unsigned hiddenLayerCount,
+            unsigned hiddenLayerNeuronCount,
+            unsigned inputNeuronCount,
+            unsigned outputNeuronCount,
+            bool useRecurrence);
 
-	NeuralNetwork(const NeuralNetwork&) = default;
-	NeuralNetwork& operator=(const NeuralNetwork&) = default;
-	NeuralNetwork(NeuralNetwork&&) = default;
-	NeuralNetwork& operator=(NeuralNetwork&&) = default;
+    NeuralNetwork(const NeuralNetwork&) = default;
+    NeuralNetwork& operator=(const NeuralNetwork&) = default;
+    NeuralNetwork(NeuralNetwork&&) = default;
+    NeuralNetwork& operator=(NeuralNetwork&&) = default;
 
-	const std::shared_ptr<const Weights>& getWeights() const { return weights; }
-	void setWeights(std::shared_ptr<const Weights> weights) {
-		assert(weights);
-		this->weights = std::move(weights);
-	}
-	unsigned getWeightCount() const {
-		assert(weights);
-		return weights->size();
-	}
+    const std::shared_ptr<const Weights>& getWeights() const { return weights; }
+    void setWeights(std::shared_ptr<const Weights> weights) {
+        assert(weights);
+        this->weights = std::move(weights);
+    }
+    unsigned getWeightCount() const {
+        assert(weights);
+        return weights->size();
+    }
 
-	unsigned getInputNeuronCount() const { return inputNeuronCount; }
-	unsigned getOutputNeuronCount() const { return outputNeuronCount; }
+    unsigned getInputNeuronCount() const { return inputNeuronCount; }
+    unsigned getOutputNeuronCount() const { return outputNeuronCount; }
 
-	Weights evaluateInput(Weights input);
+    Weights evaluateInput(Weights input);
 
-	std::string getExternalParameter(const std::string& key) const;
-	void setExternalParameter(std::string key, std::string value);
-
-private:
-	unsigned hiddenLayerCount;
-	unsigned hiddenLayerNeuronCount;
-	unsigned inputNeuronCount;
-	unsigned outputNeuronCount;
-	bool useRecurrence;
-
-	std::shared_ptr<const Weights> weights;
-	std::vector<float> recurrence;
-
-	/*
-	 * We want to achive the maximum flexibility here. Since this is only read
-	 * when the neural network is loaded, efficiency is not a concern here.  A
-	 * map is used because the neural network doesn't care about what the
-	 * actual parameters are, it only stores values to be used by the front
-	 * end. String is used as the key to increase readability of the front end
-	 * code.
-	 */
-	std::map<std::string, std::string> externalParameters;
+    std::string getExternalParameter(const std::string& key) const;
+    void setExternalParameter(std::string key, std::string value);
 
 private:
-	friend class boost::serialization::access;
+    unsigned hiddenLayerCount;
+    unsigned hiddenLayerNeuronCount;
+    unsigned inputNeuronCount;
+    unsigned outputNeuronCount;
+    bool useRecurrence;
 
-	template<class Archive>
-	void load(Archive& ar, const unsigned version) {
-		if (version < 1) {
-			LayeredNeuralNetwork network;
-			ar >> network.inputNeuronCount;
-			ar >> network.layers;
-			ar >> network.externalParameters;
+    std::shared_ptr<const Weights> weights;
+    std::vector<float> recurrence;
 
-			hiddenLayerCount = network.getHiddenLayerCount();
-			hiddenLayerNeuronCount = network.getHiddenLayerNeuronCount();
-			inputNeuronCount = network.getInputNeuronCount();
-			outputNeuronCount = network.getOutputNeuronCount();
-			useRecurrence = network.isRecurrent();
-			weights = std::make_shared<Weights>(network.getWeights());
-			externalParameters = network.getExternalParameters();
-		} else {
-			ar >> hiddenLayerCount;
-			ar >> hiddenLayerNeuronCount;
-			ar >> inputNeuronCount;
-			ar >> outputNeuronCount;
-			ar >> useRecurrence;
-			ar >> recurrence;
-			weights = loadWeights(ar);
-			ar >> externalParameters;
-		}
-	}
+    /*
+     * We want to achive the maximum flexibility here. Since this is only read
+     * when the neural network is loaded, efficiency is not a concern here.  A
+     * map is used because the neural network doesn't care about what the
+     * actual parameters are, it only stores values to be used by the front
+     * end. String is used as the key to increase readability of the front end
+     * code.
+     */
+    std::map<std::string, std::string> externalParameters;
 
-	template<class Archive>
-	void save(Archive& ar, const unsigned /*version*/) const {
-		assert(weights);
-		ar << hiddenLayerCount;
-		ar << hiddenLayerNeuronCount;
-		ar << inputNeuronCount;
-		ar << outputNeuronCount;
-		ar << useRecurrence;
-		ar << recurrence;
-		ar << *weights;
-		ar << externalParameters;
-	}
+private:
+    friend class boost::serialization::access;
 
-	BOOST_SERIALIZATION_SPLIT_MEMBER();
+    template<class Archive>
+    void load(Archive& ar, const unsigned version) {
+        if (version < 1) {
+            LayeredNeuralNetwork network;
+            ar >> network.inputNeuronCount;
+            ar >> network.layers;
+            ar >> network.externalParameters;
+
+            hiddenLayerCount = network.getHiddenLayerCount();
+            hiddenLayerNeuronCount = network.getHiddenLayerNeuronCount();
+            inputNeuronCount = network.getInputNeuronCount();
+            outputNeuronCount = network.getOutputNeuronCount();
+            useRecurrence = network.isRecurrent();
+            weights = std::make_shared<Weights>(network.getWeights());
+            externalParameters = network.getExternalParameters();
+        } else {
+            ar >> hiddenLayerCount;
+            ar >> hiddenLayerNeuronCount;
+            ar >> inputNeuronCount;
+            ar >> outputNeuronCount;
+            ar >> useRecurrence;
+            ar >> recurrence;
+            weights = loadWeights(ar);
+            ar >> externalParameters;
+        }
+    }
+
+    template<class Archive>
+    void save(Archive& ar, const unsigned /*version*/) const {
+        assert(weights);
+        ar << hiddenLayerCount;
+        ar << hiddenLayerNeuronCount;
+        ar << inputNeuronCount;
+        ar << outputNeuronCount;
+        ar << useRecurrence;
+        ar << recurrence;
+        ar << *weights;
+        ar << externalParameters;
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
 
 };
 
 NeuralNetwork loadNeuralNetworkFromFile(const std::string& fileName);
 
-}
-
 BOOST_CLASS_VERSION(car::NeuralNetwork, 2)
 
-#endif /* !NEURALNETWORK_HPP */
+#endif // CREEP_NEURALNETWORK_HPP

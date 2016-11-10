@@ -9,7 +9,7 @@
 #include "GeneticPopulation.hpp"
 #include "AIGameManager.hpp"
 #include "NeuralNetwork.hpp"
-#include "Table.hpp"
+#include "GameInfo.hpp"
 
 class Genome;
 class FitnessCalculator;
@@ -17,7 +17,7 @@ class FitnessCalculator;
 class PopulationRunner {
 public:
     PopulationRunner(const LearningParameters& parameters,
-        const std::vector<Table>& tracks,
+        const std::vector<GameInfo>& tracks,
         FitnessCalculator& fitnessCalculator,
         boost::asio::io_service& ioService);
 
