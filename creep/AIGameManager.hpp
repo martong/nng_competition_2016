@@ -1,9 +1,9 @@
 #ifndef CREEP_AIGAMEMANAGER_HPP
 #define CREEP_AIGAMEMANAGER_HPP
 
-#include "GameManager.hpp"
-#include "GameInfo.hpp"
 #include "CommonParameters.hpp"
+#include "GameInfo.hpp"
+#include "Game.hpp"
 #include "NeuralNetwork.hpp"
 
 class AIGameManager {
@@ -18,18 +18,29 @@ public:
     }
 
     void init();
-    const GameManager& getGameManager() const { return gameManager; }
 private:
-    Weights callNeuralNetwork();
+    struct NeuronActivity {
+        NeuronActivity() = default;
+        NeuronActivity(float activity, float feedCurrent, float feedNeighbor) :
+                activity(activity), feedCurrent(feedCurrent),
+                feedNeighbor(feedNeighbor) {}
+
+        float activity = -1.0f;
+        float feedCurrent = 0.0f;
+        float feedNeighbor = 0.0f;
+    };
+
+    NeuronActivity callNeuralNetwork(Point base);
     void tick();
-    Matrix<float> evaluateTable();
+    Matrix<NeuronActivity> evaluateTable(
+            Matrix<std::vector<const Tumor*>> tumorSpreadPositions);
 
     CommonParameters commonParameters;
     GameInfo gameInfo;
     std::unique_ptr<Game> game;
     int initialFloorCount = 0;
     NeuralNetwork neuralNetwork;
-    Matrix<bool> potentialCreep;
+    Matrix<NeuronActivity> neuronActivity;
 };
 
 #endif // CREEP_AIGAMEMANAGER_HPP

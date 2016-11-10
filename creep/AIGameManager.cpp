@@ -2,6 +2,7 @@
 
 #include "Constants.hpp"
 #include "Spread.hpp"
+#include "Status.hpp"
 
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -9,38 +10,34 @@ namespace {
 
 int findTotalCount(int radius) {
     Point dd{radius, radius};
-    result.push_back();
-    return countSpreadArea(dd * 2, dd, distance, alwaysTrue);
+    return countSpreadArea(dd * 2, dd, radius, alwaysTrue);
 }
 
 std::vector<int> findTotalCounts() {
-    std::veector<int> result;
+    std::vector<int> result;
     for (int radius : CommonParameters::checkDistances()) {
         result.push_back(findTotalCount(radius));
     }
+    return result;
 }
 
 static std::vector<int> totalCounts = findTotalCounts();
 int spreadRadiusTotalCount = findTotalCount(rules::creepSpreadRadius);
 
-template<class T>
-T sigmoidApproximation(T x) {
-    return x / (1 + std::abs(x));
-}
-
 template<typename Predicate>
 Weight calculateDistanceWeight(const Status& status, Point p,
         int distance, int total, const Predicate& predicate) {
-    return static_cast<Weight>(countSpreadArea(getMax(status), p,
-            distance, predicate)) / total * 10.0f;
+    return sigmoidApproximation(static_cast<Weight>(
+            countSpreadArea(getMax(status), p, distance, predicate)) /
+            total * 10.0f);
 }
 
 template<typename Predicate>
 Weight calculateDistanceWeight(const Status& status, Point p,
         std::size_t distanceIndex, const Predicate& predicate) {
     return calculateDistanceWeight(status, p,
-            CommonParameters::checkDistances[distanceIndex],
-            totalCounts[distanceIndex]);
+            CommonParameters::checkDistances()[distanceIndex],
+            totalCounts[distanceIndex], predicate);
 }
 
 Matrix<bool> getPotentialCreep(const Status& status) {
@@ -48,26 +45,29 @@ Matrix<bool> getPotentialCreep(const Status& status) {
     for (Point p : matrixRange(result)) {
         result[p] = status.isCreep(p);
     }
-    for (const Tumor& tumor : tumors) {
+    for (const Tumor& tumor : status.getTumors()) {
         iterateSpreadArea(getMax(status), tumor.position,
                 rules::creepSpreadRadius,
                 [&result](Point p) {
                     result[p] = true;
                 });
     }
+    return result;
 }
 
 auto getTumorSpreadPositions(const Status& status) {
     Matrix<std::vector<const Tumor*>> result{
-            status.width(), status.height(), false};
-    for (const Tumor& tumor : tumors) {
-        iterateSpreadArea(getMax(status), tumor.position,
-                rules::creepSpreadRadius,
-                [&result, &tumor](Point p) {
-                    if (status.isCreep(p)) {
-                        result[p].push_back(tumor);
-                    }
-                });
+            status.width(), status.height()};
+    for (const Tumor& tumor : status.getTumors()) {
+        if (tumor.cooldown == 0) {
+            iterateSpreadArea(getMax(status), tumor.position,
+                    rules::creepSpreadRadius,
+                    [&result, &tumor, &status](Point p) {
+                        if (status.isCreep(p)) {
+                            result[p].push_back(&tumor);
+                        }
+                    });
+        }
     }
     return result;
 }
@@ -83,8 +83,8 @@ struct GetDistanceSquare {
 
 } // unnamed namespace
 
-void AIGameManager::AIGameManager(const CommonParameters& commonParameters,
-        const GameInfo& track) :
+AIGameManager::AIGameManager(const CommonParameters& commonParameters,
+        const GameInfo& gameInfo) :
         commonParameters(std::move(commonParameters)),
         gameInfo{std::move(gameInfo)} {
 };
@@ -102,37 +102,65 @@ void AIGameManager::run() {
 
 void AIGameManager::tick() {
     const auto& status = game->getStatus();
-    Matrix<float> tableWeights = evaluateTable();
-
+    while (true) {
+        auto tumorSpreadPositions = getTumorSpreadPositions(status);
+        neuronActivity = evaluateTable(tumorSpreadPositions);
+        auto range = matrixRange(neuronActivity);
+        std::vector<Point> candidates;
+        std::copy_if(range.begin(), range.end(), std::back_inserter(candidates),
+                [this](Point p) {
+                    return neuronActivity[p].activity > 0.0f;
+                });
+        std::sort(candidates.begin(), candidates.end(),
+                [this](Point lhs, Point rhs) {
+                    return neuronActivity[lhs].activity >
+                            neuronActivity[rhs].activity;
+                });
+        for (Point p : candidates) {
+            if (neuronActivity[p].activity <= 0.0f) {
+                return;
+            }
+            for (const Tumor* tumor : tumorSpreadPositions[p]) {
+                // TODO create pending tumors!!!
+            }
+        }
+nextElement:;
+    }
 }
 
-Matrix<float> AIGameManager::evaluateTable() {
+auto AIGameManager::evaluateTable(
+        Matrix<std::vector<const Tumor*>> tumorSpreadPositions) ->
+        Matrix<NeuronActivity> {
     const auto& status = game->getStatus();
-    potentialCreep = getPotentialCreep(status);
-    Matrix<float> result{status.width(), status.height(), -1.0f};
+    Matrix<NeuronActivity> result{status.width(), status.height()};
     bool hasActiveQueen = std::any_of(
-            status.getQueens().begin(), status.getQueens.end(),
+            status.getQueens().begin(), status.getQueens().end(),
             [](const Queen& queen) {
                 return queen.energy > rules::queenEnertyRequirement;
             });
 
     for (Point p : matrixRange(result)) {
-        if (hasActiveQueen ||
+        if (status.isCreep(p) && (hasActiveQueen ||
+                !tumorSpreadPositions[p].empty())) {
+            result[p] = callNeuralNetwork(p);
+        }
     }
+    return result;
 }
 
-Weights AIGameManager::callNeuralNetwork(Point base) {
+auto AIGameManager::callNeuralNetwork(Point base) -> NeuronActivity {
     const auto& status = game->getStatus();
     Weights inputs;
-    inputs.reserve(CommonParameters.inputNeuronCount());
+    inputs.reserve(CommonParameters::inputNeuronCount());
+    auto potentialCreep = getPotentialCreep(status);
     // what is there at different distances
-    for (std::size_t i = 0; i < CommonParameters::checkDistances.size(); ++i) {
+    for (std::size_t i = 0; i < CommonParameters::checkDistances().size(); ++i) {
         inputs.push_back(calculateDistanceWeight(status, base, i,
-                getPredicate(&Status::isWall)));
+                getPredicate(status, &Status::isWall)));
         inputs.push_back(calculateDistanceWeight(status, base, i,
-                getPredicate(&Status::Creep)));
+                getPredicate(status, &Status::isCreep)));
         inputs.push_back(calculateDistanceWeight(status, base, i,
-                getPredicate(&Status::Floor)));
+                getPredicate(status, &Status::isFloor)));
         inputs.push_back(calculateDistanceWeight(status, base, i,
                 [&potentialCreep, base](Point p) {
                     return potentialCreep[p];
@@ -145,20 +173,33 @@ Weights AIGameManager::callNeuralNetwork(Point base) {
                 return potentialCreep[p] && !status.isCreep(p);
             }));
     // game time
-    inputs.push_back(static_cast<float>(status.getTime()) /
-            game.getTimeLimit() * 20.0f);
+    inputs.push_back(sigmoidApproximation(static_cast<float>(status.getTime()) /
+            game->getTimeLimit() * 20.0f));
     // Maximum queen energy
-    inputs.push_back(std::max_element(status.queens.begin(),
-            status.queens.end(),
+    inputs.push_back(sigmoidApproximation(std::max_element(
+            status.getQueens().begin(), status.getQueens().end(),
             [](const Queen& lhs, const Queen& rhs) {
                 return lhs.energy < rhs.energy;
-            })->energy);
+            })->energy));
     // Remaining floors
-    inputs.push_back(status.getFloorsRemaining() / initialFloorCount * 10.0f);
+    inputs.push_back(sigmoidApproximation(status.getFloorsRemaining() /
+            initialFloorCount * 10.0f));
     // Distance of nearest tumor
     auto distances = status.getTumors() | boost::adaptors::transformed(
             GetDistanceSquare(base));
-    inputs.push_back(*std::min_element(distances.begin(), distances.end()));
+    inputs.push_back(sigmoidApproximation(*std::min_element(
+                distances.begin(), distances.end())));
+    // Inputs from previous round
+    inputs.push_back(neuronActivity[base].feedCurrent);
+    inputs.push_back((
+            matrixAt(neuronActivity, base + p10, {}).feedNeighbor +
+            matrixAt(neuronActivity, base - p10, {}).feedNeighbor +
+            matrixAt(neuronActivity, base + p01, {}).feedNeighbor +
+            matrixAt(neuronActivity, base - p01, {}).feedNeighbor) / 4.0f);
     assert(inputs.size() == CommonParameters::inputNeuronCount());
-    return neuralNetwork.evaluateIput(inputs);
+    auto result = neuralNetwork.evaluateInput(inputs);
+    assert(result.size() == CommonParameters::outputNeuronCount());
+    return {result[CommonParameters::outputNeuronActivity],
+            result[CommonParameters::outputNeuronFeedCurrent],
+            result[CommonParameters::outputNeuronFeedNeighbor]};
 }

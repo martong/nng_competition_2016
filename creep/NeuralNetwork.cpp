@@ -1,30 +1,24 @@
-#include "NeuralNetwork.hpp"
 
+#include "NeuralNetwork.hpp"
 #include <cassert>
 #include <cmath>
 #include <fstream>
 #include <boost/archive/text_iarchive.hpp>
 
-#include "mathUtil.hpp"
-#include "randomUtil.hpp"
-
 NeuralNetwork::NeuralNetwork(
         unsigned hiddenLayerCount,
         unsigned hiddenLayerNeuronCount,
         unsigned inputNeuronCount,
-        unsigned outputNeuronCount,
-        bool useRecurrence) :
+        unsigned outputNeuronCount) :
             hiddenLayerCount(hiddenLayerCount),
             hiddenLayerNeuronCount(hiddenLayerNeuronCount),
             inputNeuronCount(inputNeuronCount),
-            outputNeuronCount(outputNeuronCount),
-            useRecurrence(useRecurrence),
-            recurrence(outputNeuronCount + hiddenLayerCount * hiddenLayerNeuronCount)
+            outputNeuronCount(outputNeuronCount)
 {
     std::shared_ptr<Weights> w = std::make_shared<Weights>();
 
     std::size_t numberOfWeights = getWeightCountForNetwork(hiddenLayerCount,
-            hiddenLayerNeuronCount, inputNeuronCount, outputNeuronCount, useRecurrence);
+            hiddenLayerNeuronCount, inputNeuronCount, outputNeuronCount);
 
     w->reserve(numberOfWeights);
     for (std::size_t i = 0; i < numberOfWeights; ++i) {
@@ -38,15 +32,13 @@ unsigned NeuralNetwork::getWeightCountForNetwork(
         unsigned hiddenLayerCount,
         unsigned hiddenLayerNeuronCount,
         unsigned inputNeuronCount,
-        unsigned outputNeuronCount,
-        bool useRecurrence)
+        unsigned outputNeuronCount)
 {
     return (hiddenLayerCount == 0) ?
-                (outputNeuronCount * (inputNeuronCount + 1 + useRecurrence)) :
+                (outputNeuronCount * (inputNeuronCount + 1)) :
                 (hiddenLayerNeuronCount * (inputNeuronCount + outputNeuronCount +
                         (hiddenLayerCount - 1) * hiddenLayerNeuronCount) +
-                    (hiddenLayerCount * hiddenLayerNeuronCount + outputNeuronCount) * (
-                        1 + useRecurrence));
+                    (hiddenLayerCount * hiddenLayerNeuronCount + outputNeuronCount));
 }
 
 Weights NeuralNetwork::evaluateInput(Weights input) {
@@ -70,16 +62,9 @@ Weights NeuralNetwork::evaluateInput(Weights input) {
             for (auto value: input) {
                 netInput += w[weightIndex++]*value;
             }
-            int recurrenceIndex = layer * hiddenLayerNeuronCount + inputNeuronCount;
-            if (useRecurrence) {
-                netInput += recurrence[recurrenceIndex] * w[weightIndex++];
-            }
             netInput += -1.f * w[weightIndex++];
 
             Weight sigmoid = sigmoidApproximation(netInput);
-            if (useRecurrence) {
-                recurrence[recurrenceIndex] = sigmoid;
-            }
             output.push_back(sigmoid);
 
         }

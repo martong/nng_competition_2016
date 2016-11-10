@@ -11,7 +11,6 @@
 #include <boost/serialization/string.hpp>
 
 #include "NeuronWeights.hpp"
-#include "Legacy/LayeredNeuralNetwork.hpp"
 
 class NeuralNetwork {
 public:
@@ -21,15 +20,13 @@ public:
             unsigned hiddenLayerCount,
             unsigned hiddenLayerNeuronCount,
             unsigned inputNeuronCount,
-            unsigned outputNeuronCount,
-            bool useRecurrence);
+            unsigned outputNeuronCount);
 
     static unsigned getWeightCountForNetwork(
             unsigned hiddenLayerCount,
             unsigned hiddenLayerNeuronCount,
             unsigned inputNeuronCount,
-            unsigned outputNeuronCount,
-            bool useRecurrence);
+            unsigned outputNeuronCount);
 
     NeuralNetwork(const NeuralNetwork&) = default;
     NeuralNetwork& operator=(const NeuralNetwork&) = default;
@@ -59,10 +56,8 @@ private:
     unsigned hiddenLayerNeuronCount;
     unsigned inputNeuronCount;
     unsigned outputNeuronCount;
-    bool useRecurrence;
 
     std::shared_ptr<const Weights> weights;
-    std::vector<float> recurrence;
 
     /*
      * We want to achive the maximum flexibility here. Since this is only read
@@ -79,29 +74,13 @@ private:
 
     template<class Archive>
     void load(Archive& ar, const unsigned version) {
-        if (version < 1) {
-            LayeredNeuralNetwork network;
-            ar >> network.inputNeuronCount;
-            ar >> network.layers;
-            ar >> network.externalParameters;
-
-            hiddenLayerCount = network.getHiddenLayerCount();
-            hiddenLayerNeuronCount = network.getHiddenLayerNeuronCount();
-            inputNeuronCount = network.getInputNeuronCount();
-            outputNeuronCount = network.getOutputNeuronCount();
-            useRecurrence = network.isRecurrent();
-            weights = std::make_shared<Weights>(network.getWeights());
-            externalParameters = network.getExternalParameters();
-        } else {
-            ar >> hiddenLayerCount;
-            ar >> hiddenLayerNeuronCount;
-            ar >> inputNeuronCount;
-            ar >> outputNeuronCount;
-            ar >> useRecurrence;
-            ar >> recurrence;
-            weights = loadWeights(ar);
-            ar >> externalParameters;
-        }
+        assert(version >= 2);
+        ar >> hiddenLayerCount;
+        ar >> hiddenLayerNeuronCount;
+        ar >> inputNeuronCount;
+        ar >> outputNeuronCount;
+        weights = loadWeights(ar);
+        ar >> externalParameters;
     }
 
     template<class Archive>
@@ -111,8 +90,6 @@ private:
         ar << hiddenLayerNeuronCount;
         ar << inputNeuronCount;
         ar << outputNeuronCount;
-        ar << useRecurrence;
-        ar << recurrence;
         ar << *weights;
         ar << externalParameters;
     }
@@ -121,8 +98,13 @@ private:
 
 };
 
+template<class T>
+T sigmoidApproximation(T x) {
+    return x / (1 + std::abs(x));
+}
+
 NeuralNetwork loadNeuralNetworkFromFile(const std::string& fileName);
 
-BOOST_CLASS_VERSION(car::NeuralNetwork, 2)
+BOOST_CLASS_VERSION(NeuralNetwork, 2)
 
 #endif // CREEP_NEURALNETWORK_HPP

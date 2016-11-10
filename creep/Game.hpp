@@ -62,6 +62,7 @@ public:
     const Commands& getCommands() const { return commands; }
 
     bool hasTime() const { return status.getTime() < timeLimit; }
+    int getTimeLimit() const { return timeLimit; }
     bool canContinue() const;
 
 private:
