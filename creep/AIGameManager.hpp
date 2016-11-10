@@ -4,6 +4,7 @@
 #include "GameManager.hpp"
 #include "GameInfo.hpp"
 #include "CommonParameters.hpp"
+#include "NeuralNetwork.hpp"
 
 class AIGameManager {
 public:
@@ -18,12 +19,17 @@ public:
 
     void init();
     const GameManager& getGameManager() const { return gameManager; }
-
 private:
+    Weights callNeuralNetwork();
+    void tick();
+    Matrix<float> evaluateTable();
+
     CommonParameters commonParameters;
     GameInfo gameInfo;
     std::unique_ptr<Game> game;
+    int initialFloorCount = 0;
     NeuralNetwork neuralNetwork;
+    Matrix<bool> potentialCreep;
 };
 
 #endif // CREEP_AIGAMEMANAGER_HPP

@@ -14,13 +14,13 @@ struct CommonParameters {
         return {1, 2, 5, 8, 9, 10, 11, 12, 15, 20};
     }
     constexpr static unsigned inputNeuronCount() {
-        return checkDistance().size() * 4 + 2;
+        return checkDistance().size() * 4 + 5;
     }
     constexpr static unsigned outputNeuronCount() { return 1; }
 };
 
 class NeuralNetwork;
-
+inpu
 void setNeuralNetworkExternalParameters(const CommonParameters& parameters, NeuralNetwork& neuralNetwork);
 void getNeuralNetworkExternalParameters(CommonParameters& parameters, const NeuralNetwork& neuralNetwork);
 
