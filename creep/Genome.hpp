@@ -12,10 +12,10 @@
 class Genome {
 public:
     Genome() = default;
-    Genome(std::shared_ptr<const Weights> weights, float fitness = 0.f) :
+    Genome(Weights weights, float fitness = 0.f) :
         weights(std::move(weights)), fitness(fitness) {}
 
-    std::shared_ptr<const Weights> weights;
+    Weights weights;
     float fitness = 0.f;
     std::string debugInfo;
 
@@ -24,12 +24,12 @@ private:
 
     template<class Archive>
     void load(Archive& ar, const unsigned /*version*/) {
-        weights = loadWeights(ar);
+        ar >> weights;
     }
 
     template<class Archive>
     void save(Archive& ar, const unsigned /*version*/) const {
-        ar << *weights;
+        ar << weights;
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER();
@@ -42,6 +42,6 @@ bool operator<(const Genome& left, const Genome& right) {
     return left.fitness < right.fitness;
 }
 
-BOOST_CLASS_VERSION(car::Genome, 0)
+BOOST_CLASS_VERSION(Genome, 0)
 
 #endif /* !GENOME_HPP */

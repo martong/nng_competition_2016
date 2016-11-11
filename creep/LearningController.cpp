@@ -15,8 +15,6 @@
 
 #include "LearningController.hpp"
 #include "PopulationRunner.hpp"
-#include "Track/Track.hpp"
-#include "FitnessCalculator.hpp"
 
 LearningController::LearningController(const LearningParameters& parameters,
         std::vector<GameInfo> tracks,
@@ -42,36 +40,13 @@ void printInfo(unsigned generation, float bestFitness,
     ss << boost::algorithm::join(populationAverages | boost::adaptors::transformed(
                 boost::lexical_cast<std::string, float>), ", ") << ", ";
     ss << debugInfo;
-    if (isatty(1)) { //if stdout is a terminal
-        std::cout << "\033[2K\r";
-        std::cout << ss.str() << std::flush;
+    if (isatty(2)) { //if stdout is a terminal
+        std::cerr << "\033[2K\r";
+        std::cerr << ss.str() << std::flush;
     } else {
-        std::cout << ss.str() << std::endl;
+        std::cerr << ss.str() << std::endl;
     }
 }
-
-class ThreadSpecificLua {
-public:
-    ThreadSpecificLua(std::string fitnessScript):
-        fitnessScript(std::move(fitnessScript))
-    {}
-    ThreadSpecificLua(const ThreadSpecificLua&) = delete;
-    ThreadSpecificLua& operator=(const ThreadSpecificLua&) = delete;
-    ThreadSpecificLua(ThreadSpecificLua&&) = default;
-    ThreadSpecificLua& operator=(ThreadSpecificLua&&) = default;
-
-    lua::Lua& operator()() {
-        if (!lua.get()) {
-            lua.reset(new lua::Lua);
-            lua->loadFile(fitnessScript);
-        }
-
-        return *lua;
-    }
-private:
-    std::string fitnessScript;
-    boost::thread_specific_ptr<lua::Lua> lua;
-};
 
 }
 
@@ -80,19 +55,14 @@ void LearningController::run() {
     std::vector<PopulationRunner> populations;
     populations.reserve(parameters.startingPopulations);
 
-    ThreadSpecificLua lua{parameters.iterationParameters.fitnessScript};
-    FitnessCalculator fitnessCalculator(std::ref(lua));
-
     for (std::size_t i = 0; i < parameters.startingPopulations; ++i) {
-        populations.emplace_back(parameters, tracks, fitnessCalculator, ioService);
+        populations.emplace_back(parameters, tracks, ioService);
         loadPopulation(populations.back().getPopulation());
     }
 
     float bestFitness = 0.f;
 
-    for (unsigned generation = 1;
-            !parameters.iterationParameters.generationLimit ||
-                generation <= *parameters.iterationParameters.generationLimit;
+    for (unsigned generation = 1; generation <= parameters.generationLimit;
             ++generation) {
 
         std::vector<float> populationAverages;
@@ -112,7 +82,7 @@ void LearningController::run() {
             auto worstPopulation = boost::min_element(populations, compareBestFitnesses);
             populations.erase(worstPopulation);
         }
-        if (generation % parameters.iterationParameters.printoutFrequency == 0) {
+        if (generation % parameters.printoutFrequency == 0) {
             printInfo(generation, bestFitness, populationAverages,
                     bestPopulation.getBestGenome().debugInfo);
         }
@@ -121,8 +91,10 @@ void LearningController::run() {
 
 void LearningController::saveNeuralNetwork(const Genome& genome) {
     //TODO we are reconstucting the same network as above
-    NeuralNetwork network(parameters.hiddenLayerCount, parameters.neuronPerHiddenLayer,
-            parameters.commonParameters.getInputNeuronCount(), parameters.commonParameters.outputNeuronCount(), parameters.useRecurrence);
+    NeuralNetwork network(parameters.hiddenLayerCount,
+            parameters.neuronPerHiddenLayer,
+            parameters.commonParameters.inputNeuronCount(),
+            parameters.commonParameters.outputNeuronCount());
     setNeuralNetworkExternalParameters(parameters.commonParameters, network);
 
     network.setWeights(genome.weights);

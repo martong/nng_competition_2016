@@ -21,6 +21,8 @@ public:
     }
 
     void init();
+    float getFitness() const;
+    std::string getDebugInfo() const;
 private:
     struct NeuronActivity {
         NeuronActivity() = default;
@@ -49,6 +51,9 @@ private:
     NeuralNetwork neuralNetwork;
     Matrix<NeuronActivity> neuronActivity;
     boost::container::flat_set<Point> pendingTumors;
+
+    static constexpr float fitnessFloorsRemainingMultiplier = 100.0;
+    static constexpr float fitnessTimeRemainingMultiplier = 1.0;
 };
 
 #endif // CREEP_AIGAMEMANAGER_HPP

@@ -5,32 +5,26 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include "Genome.hpp"
 #include "AsyncHelper.hpp"
-#include "FitnessCalculator.hpp"
 #include "Table.hpp"
 
 PopulationRunner::PopulationRunner(const LearningParameters& parameters,
         const std::vector<GameInfo>& tracks,
-        FitnessCalculator& fitnessCalculator,
         boost::asio::io_service& ioService):
-            fitnessCalculator(&fitnessCalculator),
             ioService(&ioService),
             population{parameters.populationSize,
                 NeuralNetwork::getWeightCountForNetwork(
                     parameters.hiddenLayerCount,
                     parameters.neuronPerHiddenLayer,
-                    parameters.commonParameters.getInputNeuronCount(),
-                    parameters.commonParameters.outputNeuronCount(),
-                    parameters.useRecurrence)}
-{
+                    parameters.commonParameters.inputNeuronCount(),
+                    parameters.commonParameters.outputNeuronCount())} {
     controllerDatas.reserve(parameters.populationSize);
     for (std::size_t i = 0; i < parameters.populationSize; ++i) {
         controllerDatas.push_back(LearningControllerData{
             {
                 parameters.hiddenLayerCount,
                 parameters.neuronPerHiddenLayer,
-                parameters.commonParameters.getInputNeuronCount(),
-                parameters.commonParameters.outputNeuronCount(),
-                parameters.useRecurrence
+                parameters.commonParameters.inputNeuronCount(),
+                parameters.commonParameters.outputNeuronCount()
             },
             {}
         });
@@ -40,7 +34,6 @@ PopulationRunner::PopulationRunner(const LearningParameters& parameters,
         controllerData.managers.reserve(tracks.size());
         for (const auto& track: tracks) {
             controllerData.managers.emplace_back(parameters.commonParameters,
-                    parameters.iterationParameters,
                     track);
         }
     }
@@ -90,11 +83,12 @@ void PopulationRunner::runSimulation(Genome& genome, LearningControllerData& dat
         manager.run();
     }
 
-    auto range = data.managers | boost::adaptors::transformed([](const AIGameManager& manager) {
-            return manager.getGameManager().getModel();
-        });
-    genome.fitness = fitnessCalculator->calculateFitness(range.begin(), range.end(),
-            &genome.debugInfo);
+    genome.fitness = 0.0f;
+    genome.debugInfo.clear();
+    for (const AIGameManager& manager : data.managers) {
+        genome.fitness += manager.getFitness();
+        genome.debugInfo += manager.getDebugInfo() + "  ";
+    }
 }
 
 void PopulationRunner::updateBestFitness() {

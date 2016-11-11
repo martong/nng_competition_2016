@@ -3,9 +3,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace car {
-
-void setNeuralNetworkExternalParameters(const CommonParameters& parameters, NeuralNetwork& neuralNetwork) {
+void setNeuralNetworkExternalParameters(const CommonParameters& /*parameters*/, NeuralNetwork& /*neuralNetwork*/) {
 }
 
 namespace {
@@ -17,9 +15,5 @@ T getParameter(const std::string& s) {
 
 }
 
-void getNeuralNetworkExternalParameters(CommonParameters& parameters, const NeuralNetwork& neuralNetwork) {
+void getNeuralNetworkExternalParameters(CommonParameters& /*parameters*/, const NeuralNetwork& /*neuralNetwork*/) {
 }
-
-}
-
-
