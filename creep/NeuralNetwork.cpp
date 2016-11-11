@@ -13,27 +13,17 @@ NeuralNetwork::NeuralNetwork(
             hiddenLayerCount(hiddenLayerCount),
             hiddenLayerNeuronCount(hiddenLayerNeuronCount),
             inputNeuronCount(inputNeuronCount),
-            outputNeuronCount(outputNeuronCount)
-{
-    std::shared_ptr<Weights> w = std::make_shared<Weights>();
-
-    std::size_t numberOfWeights = getWeightCountForNetwork(hiddenLayerCount,
-            hiddenLayerNeuronCount, inputNeuronCount, outputNeuronCount);
-
-    w->reserve(numberOfWeights);
-    for (std::size_t i = 0; i < numberOfWeights; ++i) {
-        w->push_back(randomReal(-1, 1));
-    }
-
-    weights = w;
+            outputNeuronCount(outputNeuronCount),
+            weights(getWeightCountForNetwork(hiddenLayerCount,
+                    hiddenLayerNeuronCount, inputNeuronCount, outputNeuronCount),
+                    0.0f) {
 }
 
 unsigned NeuralNetwork::getWeightCountForNetwork(
         unsigned hiddenLayerCount,
         unsigned hiddenLayerNeuronCount,
         unsigned inputNeuronCount,
-        unsigned outputNeuronCount)
-{
+        unsigned outputNeuronCount) {
     return (hiddenLayerCount == 0) ?
                 (outputNeuronCount * (inputNeuronCount + 1)) :
                 (hiddenLayerNeuronCount * (inputNeuronCount + outputNeuronCount +
@@ -43,10 +33,8 @@ unsigned NeuralNetwork::getWeightCountForNetwork(
 
 Weights NeuralNetwork::evaluateInput(Weights input) {
     assert(input.size() == inputNeuronCount);
-    assert(weights);
 
     Weights output;
-    const auto& w = *weights;
 
     unsigned weightIndex = 0;
     for (unsigned layer = 0; layer <= hiddenLayerCount; ++layer) {
@@ -60,9 +48,9 @@ Weights NeuralNetwork::evaluateInput(Weights input) {
             Weight netInput = 0;
 
             for (auto value: input) {
-                netInput += w[weightIndex++]*value;
+                netInput += weights[weightIndex++]*value;
             }
-            netInput += -1.f * w[weightIndex++];
+            netInput += -1.f * weights[weightIndex++];
 
             Weight sigmoid = sigmoidApproximation(netInput);
             output.push_back(sigmoid);

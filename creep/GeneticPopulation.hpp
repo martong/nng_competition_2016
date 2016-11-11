@@ -6,12 +6,15 @@
 #include "NeuralNetwork.hpp"
 #include "Genome.hpp"
 
+#include "Random.hpp"
+
 //This class implements Genetic algorithms to mutate its population
 class GeneticPopulation {
 public:
 
     GeneticPopulation() = default;
-    GeneticPopulation(unsigned populationSize, unsigned numberOfWeights);
+    GeneticPopulation(unsigned populationSize, unsigned numberOfWeights,
+            RandomGenerator& rng);
 
     GeneticPopulation(const GeneticPopulation&) = default;
     GeneticPopulation(GeneticPopulation&&) = default;
@@ -49,7 +52,6 @@ private:
     constexpr float maxPerturbation = 0.3;
     constexpr unsigned bestTopN = 8;
     constexpr unsigned bestCopies = 1;
-
 };
 
 #endif // CREEP_GENETICPOPULATION_HPP

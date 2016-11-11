@@ -33,14 +33,12 @@ public:
     NeuralNetwork(NeuralNetwork&&) = default;
     NeuralNetwork& operator=(NeuralNetwork&&) = default;
 
-    const std::shared_ptr<const Weights>& getWeights() const { return weights; }
-    void setWeights(std::shared_ptr<const Weights> weights) {
-        assert(weights);
+    const Weights& getWeights() const { return weights; }
+    void setWeights(Weights weights) {
         this->weights = std::move(weights);
     }
     unsigned getWeightCount() const {
-        assert(weights);
-        return weights->size();
+        return weights.size();
     }
 
     unsigned getInputNeuronCount() const { return inputNeuronCount; }
@@ -57,7 +55,7 @@ private:
     unsigned inputNeuronCount;
     unsigned outputNeuronCount;
 
-    std::shared_ptr<const Weights> weights;
+    Weights weights;
 
     /*
      * We want to achive the maximum flexibility here. Since this is only read
@@ -79,18 +77,17 @@ private:
         ar >> hiddenLayerNeuronCount;
         ar >> inputNeuronCount;
         ar >> outputNeuronCount;
-        weights = loadWeights(ar);
+        ar >> weights;
         ar >> externalParameters;
     }
 
     template<class Archive>
     void save(Archive& ar, const unsigned /*version*/) const {
-        assert(weights);
         ar << hiddenLayerCount;
         ar << hiddenLayerNeuronCount;
         ar << inputNeuronCount;
         ar << outputNeuronCount;
-        ar << *weights;
+        ar << weights;
         ar << externalParameters;
     }
 

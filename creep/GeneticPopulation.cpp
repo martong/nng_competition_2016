@@ -5,7 +5,20 @@
 
 #include "GeneticPopulation.hpp"
 
-#include "randomUtil.hpp"
+
+namespace {
+
+thread_local std::mt19937 rng{std::random_device{}()};
+
+float randomReal(float min, float max) {
+    return std::uniform_real_distribution<float>{min, max}(rng);
+}
+
+int randomInt(int min, int max) {
+    return std::uniform_int_distribution<int>{min, max - 1}(rng);
+}
+
+} // unnamed namespace
 
 GeneticPopulation::GeneticPopulation(unsigned populationSize, unsigned numberOfWeights) {
     for (unsigned i = 0; i < populationSize; ++i) {
