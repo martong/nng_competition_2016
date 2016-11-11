@@ -181,6 +181,30 @@ TEST(M3x3, fault) {
     EXPECT_TRUE(check(ps, m));
 }
 
+TEST(M3x3, fault2) {
+    Matrix<int> m{3, 3};
+    m[{0,0}] = 1;
+    m[{1,0}] = 3;
+    m[{2,0}] = 1;
+
+    m[{0,1}] = 2;
+    m[{1,1}] = 1;
+    m[{2,1}] = 2;
+
+    m[{0,2}] = 2;
+    m[{1,2}] = 2;
+    m[{2,2}] = 3;
+    std::cout << m;
+
+    auto ps = solve(m);
+    std::cout << ps;
+
+    auto m2 = build(m.width(), m.height(), ps);
+    std::cout << m2;
+
+    EXPECT_TRUE(check(ps, m));
+}
+
 
 TEST(M3x3, many) {
     for (int i = 0; i < 1000; ++i) {
@@ -229,10 +253,10 @@ TEST(Big, xxx) {
 }
 
 TEST(Big, seq) {
-    for (int N = 5; N < 10; ++N) {
+    for (int N = 5; N < 15; ++N) {
         for (int i = 0; i < 10; ++i) {
             auto m = generate(N, N);
-            std::cout << i << " Generated:" << m;
+            std::cout << "N:" << N << "    " << i << " Generated:" << m;
             auto ps = solve(m);
             EXPECT_TRUE(check(ps, m));
         }
