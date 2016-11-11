@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     std::size_t length = 0;
     std::string previousWord;
     for (const auto& elem : chainWords) {
-        std::size_t length += findRemainingLen(previousWord, elem);
+        length += findRemainingLen(previousWord, elem);
         previousWord = elem;
     }
     std::cout << "lenth of word chain: " << length << std::endl;

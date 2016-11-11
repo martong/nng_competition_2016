@@ -3,7 +3,7 @@ include_rules
 include $(COMPILE_TUP)
 
 INCLUDE_DIRS += -I$(CPP_UTIL_DIR)/include
-LIBS += -lpthread -lboost_system -lboost_thread
+LIBS += -lpthread -lboost_system -lboost_thread -lgmp
 
 : foreach *.cpp |> !cxx |>
 
@@ -13,4 +13,5 @@ include $(LINK_TUP)
 : main.o |> !linker |> worddomino
 : second.o $(CPP_UTIL_DIR)/lib/libcpp-util.a |> !linker |> second
 : find_longest_overlaps_once.o |> !linker |> find_longest_overlaps_once
+: randomize_longest_overlaps.o $(CPP_UTIL_DIR)/lib/libcpp-util.a |> !linker |> randomize_longest_overlaps
 : check.o |> !linker |> check
