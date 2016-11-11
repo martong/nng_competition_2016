@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include "Options.hpp"
 #include "Solver.hpp"
+#include "LearningController.hpp"
 
 #include <util/PrefixMap.hpp>
 #include <util/ThreadPool.hpp>
@@ -8,7 +9,7 @@
 #include <fstream>
 #include <iostream>
 
-void simulate(const GameInfo& game, const Options&) {
+void simulate(const GameInfo& gameInfo, const Options&) {
     Game game{gameInfo};
     int numberOfCommands = 0;
     std::cin >> numberOfCommands;
@@ -40,7 +41,7 @@ void doSolve(const GameInfo& gameInfo, const Heuristics& heuristics,
     onFinished(solution);
 }
 
-void solve(const Game& gameInfo, const Options& options) {
+void solve(const GameInfo& gameInfo, const Options& options) {
     std::vector<Solution> solutions;
     util::ThreadPool threadPool{options.numThreads};
     boost::asio::io_service& ioService = threadPool.getIoService();
@@ -96,6 +97,12 @@ void solve(const Game& gameInfo, const Options& options) {
 }
 
 void neural(const GameInfo& gameInfo, const Options& options) {
+    util::ThreadPool threadPool{options.numThreads};
+    boost::asio::io_service& ioService = threadPool.getIoService();
+    LearningController learningController{options.learningParameters,
+        {gameInfo}, ioService};
+    learningController.run();
+    threadPool.wait();
 }
 
 int main(int argc, const char* argv[]) {
@@ -105,7 +112,7 @@ int main(int argc, const char* argv[]) {
             {"neural", neural},
             {"solve", solve}};
     std::ifstream inputFile{options.inputFileName};
-    Game game{loadGameInfo(inputFile)};
+    GameInfo gameInfo{loadGameInfo(inputFile)};
     inputFile.close();
-    actions.at(options.type)(game, options);
+    actions.at(options.type)(gameInfo, options);
 }

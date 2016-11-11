@@ -1,6 +1,8 @@
 #ifndef CREEP_OPTIONS_HPP
 #define CREEP_OPTIONS_HPP
 
+#include "LearningParameters.hpp"
+
 #include <string>
 
 struct Finder {
@@ -29,6 +31,7 @@ struct Options {
     Finder distanceSquareMultiplierFinder;
     Finder spreadRadiusMultiplierFinder;
     std::size_t numThreads = 1;
+    LearningParameters learningParameters;
 };
 
 Options parseOptions(int argc, const char* argv[]);

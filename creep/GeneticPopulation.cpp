@@ -18,6 +18,12 @@ int randomInt(int min, int max) {
     return std::uniform_int_distribution<int>{min, max - 1}(rng);
 }
 
+void randomizeWeights(Weights& weights) {
+    for (Weight& weight : weights) {
+        weight = randomReal(-1.0f, 1.0f);
+    }
+}
+
 } // unnamed namespace
 
 GeneticPopulation::GeneticPopulation(unsigned populationSize, unsigned numberOfWeights) {
@@ -130,6 +136,11 @@ void GeneticPopulation::pickBest(unsigned topN, unsigned copies, Genomes& newPop
     }
 }
 
+void GeneticPopulation::randomize() {
+    for (Genome& genome : population) {
+        randomizeWeights(genome.weights);
+    }
+}
 
 void GeneticPopulation::calculateStats() {
     assert(population.size() > 0);

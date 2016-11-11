@@ -4,7 +4,6 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include <random>
 
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/vector.hpp>
@@ -49,14 +48,6 @@ public:
 
     std::string getExternalParameter(const std::string& key) const;
     void setExternalParameter(std::string key, std::string value);
-
-    template<typename Rng>
-    void randomize(Rng& rng) {
-        std::uniform_real_distribution<float> dist{-1.0f, 1.0f};
-        for (Weight& weight : weights) {
-            weight = dist(rng);
-        }
-    }
 
 private:
     unsigned hiddenLayerCount;

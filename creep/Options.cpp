@@ -38,12 +38,15 @@ Options parseOptions(int argc, const char* argv[]) {
     std::string timeMultiplierFinderString = "0.0,-1.0,-1.0";
     std::string distanceSquareMultiplierFinderString = "0.0,-1.0,-1.0";
     std::string spreadRadiusMultiplierFinderString = "0.0,1.0,1.0";
-    po::options_description options;
-    options.add_options()
+    po::options_description commonOptions{"Common options"};
+    commonOptions.add_options()
             ("help,h", "Help")
             ("jobs,j", defaultValue(result.numThreads), "Number of threads")
             ("type,t", po::value(&result.type), "simulate or solve")
             ("map,m", po::value(&result.inputFileName), "The input file name")
+            ;
+    po::options_description solveOptions{"Options for heuristic solving"};
+    solveOptions.add_options()
             ("distance-square-multiplier",
                      defaultValue(distanceSquareMultiplierFinderString),
                      "Values of distance square multiplier: min,max,delta")
@@ -52,7 +55,45 @@ Options parseOptions(int argc, const char* argv[]) {
                      "Values of time multiplier: min,max,delta")
             ("spread-radius-multiplier",
                      defaultValue(spreadRadiusMultiplierFinderString),
-                     "Values of spread radius multiplier: min,max,delta");
+                     "Values of spread radius multiplier: min,max,delta")
+            ;
+    po::options_description neuralOptions{"Options for neural solving"};
+    neuralOptions.add_options()
+            ("hidden-layer-count",
+             defaultValue(result.learningParameters.hiddenLayerCount),
+             "Hidden layer count")
+            ("neuron-per-hidden-layer",
+             defaultValue(result.learningParameters.neuronPerHiddenLayer),
+             "Neurons per hidden layer")
+            ("population-size",
+             defaultValue(result.learningParameters.populationSize),
+             "The size of the population")
+            ("generation-limit",
+             defaultValue(result.learningParameters.generationLimit),
+             "Stop after this many generations")
+            ("printout-frequency",
+             defaultValue(result.learningParameters.printoutFrequency),
+             "Print diagnostic after each n generations")
+            ("best-ai-file",
+             defaultValue(result.learningParameters.bestAIFile),
+             "The file to save the best neural network")
+            ("population-input-file,i",
+             defaultValue(result.learningParameters.populationInputFile),
+             "Load initial population from here")
+            ("population-output-file,o",
+             defaultValue(result.learningParameters.populationOutputFile),
+             "The file to save the best neural network")
+            ("starting-populations",
+             defaultValue(result.learningParameters.startingPopulations),
+             "The number of independent populations to start the learning with.")
+            ("population-cutoff",
+             defaultValue(result.learningParameters.populationCutoff),
+             "The number of generations after the worst population is dropped (if there are more than one).")
+            ;
+    po::options_description options;
+    options.add(commonOptions);
+    options.add(solveOptions);
+    options.add(neuralOptions);
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).
             options(options).run(), vm);

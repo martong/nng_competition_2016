@@ -36,6 +36,7 @@ private:
         Weights& child2) const;
 
     void calculateStats();
+    void randomize();
 
     Genomes population;
 

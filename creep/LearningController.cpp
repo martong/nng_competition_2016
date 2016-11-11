@@ -105,17 +105,17 @@ void LearningController::saveNeuralNetwork(const Genome& genome) {
 }
 
 void LearningController::loadPopulation(GeneticPopulation& population) const {
-    if (parameters.populationInputFile &&
-            boost::filesystem::exists(*parameters.populationInputFile)) {
-        std::ifstream ifs(*parameters.populationInputFile);
+    if (!parameters.populationInputFile.empty() &&
+            boost::filesystem::exists(parameters.populationInputFile)) {
+        std::ifstream ifs(parameters.populationInputFile);
         boost::archive::text_iarchive ia(ifs);
         ia >> population.getPopulation();
     }
 }
 
 void LearningController::savePopulation(const GeneticPopulation& population) const {
-    if (parameters.populationOutputFile) {
-        std::ofstream ofs(*parameters.populationOutputFile);
+    if (!parameters.populationOutputFile.empty()) {
+        std::ofstream ofs(parameters.populationOutputFile);
         boost::archive::text_oarchive oa(ofs);
         oa << population.getPopulation();
     }
