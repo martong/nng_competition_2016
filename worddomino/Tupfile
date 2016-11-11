@@ -12,3 +12,5 @@ include $(LINK_TUP)
 #: *.o $(UTIL_DIR)/*.o $(CPP_UTIL_DIR)/lib/libcpp-util.a |> !linker |> worddomino
 : main.o |> !linker |> worddomino
 : second.o $(CPP_UTIL_DIR)/lib/libcpp-util.a |> !linker |> second
+: find_longest_overlaps_once.o |> !linker |> find_longest_overlaps_once
+: check.o |> !linker |> check
