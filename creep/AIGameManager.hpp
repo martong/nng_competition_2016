@@ -6,6 +6,9 @@
 #include "Game.hpp"
 #include "NeuralNetwork.hpp"
 
+#include <boost/container/flat_set.hpp>
+#include <boost/optional.hpp>
+
 class AIGameManager {
 public:
     AIGameManager(const CommonParameters& commonParameters,
@@ -29,11 +32,15 @@ private:
         float feedCurrent = 0.0f;
         float feedNeighbor = 0.0f;
     };
+    using TumorSpreadPositions = Matrix<std::vector<const Tumor*>>;
 
     NeuronActivity callNeuralNetwork(Point base);
     void tick();
     Matrix<NeuronActivity> evaluateTable(
             Matrix<std::vector<const Tumor*>> tumorSpreadPositions);
+    Matrix<bool> getPotentialCreep();
+    TumorSpreadPositions getTumorSpreadPositions();
+    boost::optional<Point> addCommandIfPossible();
 
     CommonParameters commonParameters;
     GameInfo gameInfo;
@@ -41,6 +48,7 @@ private:
     int initialFloorCount = 0;
     NeuralNetwork neuralNetwork;
     Matrix<NeuronActivity> neuronActivity;
+    boost::container::flat_set<Point> pendingTumors;
 };
 
 #endif // CREEP_AIGAMEMANAGER_HPP

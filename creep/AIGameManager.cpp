@@ -40,38 +40,6 @@ Weight calculateDistanceWeight(const Status& status, Point p,
             totalCounts[distanceIndex], predicate);
 }
 
-Matrix<bool> getPotentialCreep(const Status& status) {
-    Matrix<bool> result{status.width(), status.height()};
-    for (Point p : matrixRange(result)) {
-        result[p] = status.isCreep(p);
-    }
-    for (const Tumor& tumor : status.getTumors()) {
-        iterateSpreadArea(getMax(status), tumor.position,
-                rules::creepSpreadRadius,
-                [&result](Point p) {
-                    result[p] = true;
-                });
-    }
-    return result;
-}
-
-auto getTumorSpreadPositions(const Status& status) {
-    Matrix<std::vector<const Tumor*>> result{
-            status.width(), status.height()};
-    for (const Tumor& tumor : status.getTumors()) {
-        if (tumor.cooldown == 0) {
-            iterateSpreadArea(getMax(status), tumor.position,
-                    rules::creepSpreadRadius,
-                    [&result, &tumor, &status](Point p) {
-                        if (status.isCreep(p)) {
-                            result[p].push_back(&tumor);
-                        }
-                    });
-        }
-    }
-    return result;
-}
-
 struct GetDistanceSquare {
     GetDistanceSquare(Point p) : p(p) {}
 
@@ -102,30 +70,55 @@ void AIGameManager::run() {
 
 void AIGameManager::tick() {
     const auto& status = game->getStatus();
-    while (true) {
-        auto tumorSpreadPositions = getTumorSpreadPositions(status);
-        neuronActivity = evaluateTable(tumorSpreadPositions);
-        auto range = matrixRange(neuronActivity);
-        std::vector<Point> candidates;
-        std::copy_if(range.begin(), range.end(), std::back_inserter(candidates),
-                [this](Point p) {
-                    return neuronActivity[p].activity > 0.0f;
-                });
-        std::sort(candidates.begin(), candidates.end(),
-                [this](Point lhs, Point rhs) {
-                    return neuronActivity[lhs].activity >
-                            neuronActivity[rhs].activity;
-                });
-        for (Point p : candidates) {
-            if (neuronActivity[p].activity <= 0.0f) {
-                return;
-            }
-            for (const Tumor* tumor : tumorSpreadPositions[p]) {
-                // TODO create pending tumors!!!
+    potentialTumors.clear();
+    while (Point p = addCommandIfPossible(tumorSpreadPositions)) {
+        pendingTumors.insert(p);
+    }
+    game.tick();
+}
+
+boost::optional<Point> addCommandIfPossible() {
+    auto tumorSpreadPositions = getTumorSpreadPositions(status);
+    neuronActivity = evaluateTable(tumorSpreadPositions);
+    auto range = matrixRange(neuronActivity);
+    std::vector<Point> candidates;
+    std::copy_if(range.begin(), range.end(), std::back_inserter(candidates),
+            [this, &status](Point p) {
+                return neuronActivity[p].activity > 0.0f &&
+                        status.isCreep(p) && potentialTumors.count(p) == 0;
+            });
+    std::sort(candidates.begin(), candidates.end(),
+            [this](Point lhs, Point rhs) {
+                return neuronActivity[lhs].activity >
+                        neuronActivity[rhs].activity;
+            });
+    for (Point p : candidates) {
+        if (neuronActivity[p].activity <= 0.0f) {
+            return;
+        }
+        for (const Tumor* tumor : tumorSpreadPositions[p]) {
+            if (tumor->position == p) {
+                game.addCommand({status.getTime(),
+                        CommandType::PlaceTumorFromTumor, tumor->id, p});
+                return p;
             }
         }
-nextElement:;
+        std::vector<const Queen*> queens(status.getQueens().size());
+        std::copy(status.getQueens().begin(), status.getQueens.end(),
+                queens.begin());
+        std::sort(queens.begin(), queens.end(),
+                [](const Queen& lhs, const Queen& rhs) {
+                    return lhs.energy < rhs.energy;
+                });
+        for (const Queen* queen : queens) {
+            if (queen.energy > rules::queenEnertyRequirement) {
+                game.addCommand({status.getTime(),
+                        CommandType::PlaceTumorFromQueen, queen->id, p});
+                return p;
+            }
+        }
     }
+    return boost::none;
 }
 
 auto AIGameManager::evaluateTable(
@@ -203,3 +196,40 @@ auto AIGameManager::callNeuralNetwork(Point base) -> NeuronActivity {
             result[CommonParameters::outputNeuronFeedCurrent],
             result[CommonParameters::outputNeuronFeedNeighbor]};
 }
+
+Matrix<bool> AIGameManager::getPotentialCreep() {
+    const auto& status = game->getStatus();
+    Matrix<bool> result{status.width(), status.height()};
+    for (Point p : matrixRange(result)) {
+        result[p] = status.isCreep(p);
+    }
+    auto setToTrue = [&result](Point p) { result[p] = true; };
+    for (const Tumor& tumor : status.getTumors()) {
+        iterateSpreadArea(getMax(status), tumor.position,
+                rules::creepSpreadRadius, setToTrue);
+    }
+    for (Point p : potentialTumors) {
+        iterateSpreadArea(getMax(status), p, rules::creepSpreadRadius,
+                setToTrue);
+    }
+    return result;
+}
+
+TumorSpreadPositions AIGameManager::getTumorSpreadPositions() {
+    const auto& status = game->getStatus();
+    Matrix<std::vector<const Tumor*>> result{
+            status.width(), status.height()};
+    for (const Tumor& tumor : status.getTumors()) {
+        if (tumor.cooldown == 0) {
+            iterateSpreadArea(getMax(status), tumor.position,
+                    rules::creepSpreadRadius,
+                    [&result, &tumor, &status](Point p) {
+                        if (status.isCreep(p)) {
+                            result[p].push_back(&tumor);
+                        }
+                    });
+        }
+    }
+    return result;
+}
+
