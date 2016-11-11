@@ -2,6 +2,7 @@
 
 #include "Constants.hpp"
 #include "Log.hpp"
+#include "Game.hpp"
 #include "Spread.hpp"
 
 #include <DumperFunctions.hpp>
@@ -286,12 +287,13 @@ private:
 
 } // unnamed namespace
 
-Solution findSolution(Game game, const Heuristics& heuristics,
+Solution findSolution(const GameInfo& gameInfo, const Heuristics& heuristics,
         std::shared_ptr<Node> startingNode) {
     LOG << "Solve: tm=" << heuristics.timeMultiplier <<
             " dsm=" << heuristics.distanceSquareMultiplier <<
             " srm=" << heuristics.spreadRadiusMultiplier << "\n";
     Solution result;
+    Game game{gameInfo};
     SolverImpl impl{game, heuristics, std::move(startingNode)};
     result.node = impl.solve();
     result.time = game.getStatus().getTime();

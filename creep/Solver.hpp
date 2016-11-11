@@ -2,7 +2,7 @@
 #define CREEP_SOLVER_HPP
 
 #include "Command.hpp"
-#include "Game.hpp"
+#include "GameInfo.hpp"
 #include "Node.hpp"
 
 struct Heuristics {
@@ -18,7 +18,7 @@ struct Solution {
     int time;
 };
 
-Solution findSolution(Game game, const Heuristics& heuristics,
+Solution findSolution(const GameInfo& gameInfo, const Heuristics& heuristics,
         std::shared_ptr<Node> startingNode = nullptr);
 
 #endif // CREEP_SOLVER_HPP

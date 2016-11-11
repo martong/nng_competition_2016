@@ -8,7 +8,8 @@
 #include <fstream>
 #include <iostream>
 
-void simulate(Game& game, const Options&) {
+void simulate(const GameInfo& game, const Options&) {
+    Game game{gameInfo};
     int numberOfCommands = 0;
     std::cin >> numberOfCommands;
     for (int i = 0; i < numberOfCommands; ++i) {
@@ -25,12 +26,12 @@ void simulate(Game& game, const Options&) {
 }
 
 template<typename OnFinished>
-void doSolve(const Game& game, const Heuristics& heuristics,
+void doSolve(const GameInfo& gameInfo, const Heuristics& heuristics,
         const OnFinished& onFinished) {
     std::cerr << "Solving: tm=" << heuristics.timeMultiplier <<
             " dsm=" << heuristics.distanceSquareMultiplier <<
             " srm=" << heuristics.spreadRadiusMultiplier << "\n";
-    auto solution = findSolution(game, heuristics);
+    auto solution = findSolution(gameInfo, heuristics);
     std::cerr << "Solved: tm=" << solution.heuristics.timeMultiplier <<
             " dsm=" << solution.heuristics.distanceSquareMultiplier <<
             " srm=" << solution.heuristics.spreadRadiusMultiplier <<
@@ -39,7 +40,7 @@ void doSolve(const Game& game, const Heuristics& heuristics,
     onFinished(solution);
 }
 
-void solve(Game& game, const Options& options) {
+void solve(const Game& gameInfo, const Options& options) {
     std::vector<Solution> solutions;
     util::ThreadPool threadPool{options.numThreads};
     boost::asio::io_service& ioService = threadPool.getIoService();
@@ -59,8 +60,8 @@ void solve(Game& game, const Options& options) {
                             iterateFinder(options.spreadRadiusMultiplierFinder,
                                     [&](float spreadRadiusMultiplier) {
                                         ioService.post(
-                                                [=, &game, &onFinished]() {
-                                                    doSolve(game, {
+                                                [=, &gameInfo, &onFinished]() {
+                                                    doSolve(gameInfo, {
                                                     timeMultiplier,
                                                     distanceSquareMultiplier,
                                                     spreadRadiusMultiplier},
@@ -94,10 +95,14 @@ void solve(Game& game, const Options& options) {
     }
 }
 
+void neural(const GameInfo& gameInfo, const Options& options) {
+}
+
 int main(int argc, const char* argv[]) {
     Options options = parseOptions(argc, argv);
-    util::PrefixMap<void(*)(Game&, const Options&)> actions{
+    util::PrefixMap<void(*)(const GameInfo&, const Options&)> actions{
             {"simulate", simulate},
+            {"neural", neural},
             {"solve", solve}};
     std::ifstream inputFile{options.inputFileName};
     Game game{loadGameInfo(inputFile)};
