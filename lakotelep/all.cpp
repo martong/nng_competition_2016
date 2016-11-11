@@ -723,7 +723,8 @@ struct Resolution {
 bool flood(std::vector<Point> st, Matrix<int>& m,
                 std::vector<Point>& path, std::unordered_map<Matrix<int>, bool>& marked) {
     //if (marked[m]) return false;
-    marked[m] = true;
+    // TODO mark the points, not the matrix ?
+    //marked[m] = true;
 
     //std::cout << m;
     std::vector<Point> nst;
@@ -744,7 +745,7 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
             if (m[n] == 1) nst.push_back(n);
         }
 
-        if (marked[m]) { std::cout << "MARKED\n"; continue; }
+        //if (marked[m]) { [>std::cout << "MARKED\n"<]; continue; }
 
         // Cut offs
         for (const auto& n : ns) {
@@ -754,7 +755,7 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
                 sum_nns += m[nn];
             }
             if (sum_nns < m[n] - 1) {
-                std::cout << "CUT1\n";
+                //std::cout << "CUT1\n";
                 return false;
             }
         }
@@ -763,6 +764,36 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
         if (fallback) { return false; }
     }
     return true;
+}
+
+std::vector<Point> concat(const std::vector<Point>& v1, const std::vector<Point>& v2) {
+    std::vector<Point> result;
+    result.reserve(v1.size() + v2.size());
+    result.insert(result.end(), v1.begin(), v1.end());
+    result.insert(result.end(), v2.begin(), v2.end());
+    return result;
+}
+
+bool solve4impl(std::vector<Point> S, Matrix<int> m, std::vector<Point> path,
+                std::vector<Point>& result,
+                std::unordered_map<Matrix<int>, bool>& marked) {
+    //std::cout << S;
+    //std::cout << m;
+    if (path.size() == m.size()) {
+        result = path;
+        return true;
+    }
+    if (S.empty()) return false;
+    auto p = S.back();
+    S.pop_back();
+
+    if (!solve4impl(S, m, path, result, marked)) {
+        std::vector<Point> floodpath;
+        if (flood({p}, m, floodpath, marked)) {
+            return solve4impl(S, m, concat(path, floodpath), result, marked);
+        }
+    }
+    return false;
 }
 
 bool solve3impl(std::vector<Point> st, Matrix<int> m, std::vector<Point>& path,
@@ -816,6 +847,7 @@ std::vector<Point> solve(Matrix<int> m) {
         }
     }
     flood(st, m, path, marked);
+    std::cout << m;
 
     st.clear();
     for (int i = 1; i < m.width() - 1; ++i) {
@@ -825,18 +857,19 @@ std::vector<Point> solve(Matrix<int> m) {
         }
     }
 
-    //solve2impl(st, m, path, result, marked);
+    //st.clear();
+    //for (int i = 0; i < m.width(); ++i) {
+        //for (int j = 0; j < m.height(); ++j) {
+            //Point p{j, i};
+            //if (m[p] == 1) st.push_back(p);
+        //}
+    //}
 
-    //Resolution r{m, st, path, result};
-    //solve3impl(r);
-    //std::vector<Point> path2 = path;
-    solve3impl(st, m, path, result, marked);
 
-    std::reverse(path.begin(), path.end());
-    return path;
+    solve4impl(st, m, path, result, marked);
 
-    //std::reverse(result.begin(), result.end());
-    //return result;
+    std::reverse(result.begin(), result.end());
+    return result;
 }
 
 void CalculateBuildOrder(const std::vector<std::vector<int>>& buildings, std::vector<std::pair<size_t, size_t>>& solution) {
