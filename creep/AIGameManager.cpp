@@ -74,8 +74,8 @@ void AIGameManager::run() {
     while (game->hasTime() && game->getStatus().getFloorsRemaining() > 0) {
         tick();
     }
-}
 
+}
 void AIGameManager::tick() {
     LOG << "Tick " << game->getStatus().getTime() << "\n";
     //game->print(LOG);
@@ -261,8 +261,8 @@ float AIGameManager::getFitness() const {
     const auto& status = game->getStatus();
     return (game->getTimeLimit() - status.getTime()) *
             fitnessTimeRemainingMultiplier +
-            status.getFloorsRemaining() *
-            fitnessFloorsRemainingMultiplier;
+            (initialFloorCount - status.getFloorsRemaining()) *
+            fitnessFloorsCoveredMultiplier;
 }
 
 std::string AIGameManager::getDebugInfo() const {

@@ -55,7 +55,7 @@ private:
     boost::container::flat_set<const Tumor*> pendingTumors;
     boost::container::flat_set<const Queen*> pendingQueens;
 
-    static constexpr float fitnessFloorsRemainingMultiplier = 100.0;
+    static constexpr float fitnessFloorsCoveredMultiplier = 20.0;
     static constexpr float fitnessTimeRemainingMultiplier = 1.0;
 };
 

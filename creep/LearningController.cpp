@@ -40,12 +40,12 @@ void printInfo(unsigned generation, float bestFitness,
     ss << boost::algorithm::join(populationAverages | boost::adaptors::transformed(
                 boost::lexical_cast<std::string, float>), ", ") << ", ";
     ss << debugInfo;
-    if (isatty(2)) { //if stdout is a terminal
-        std::cerr << "\033[2K\r";
-        std::cerr << ss.str() << std::flush;
-    } else {
+    //if (isatty(2)) { //if stdout is a terminal
+        //std::cerr << "\033[2K\r";
+        //std::cerr << ss.str() << std::flush;
+    //} else {
         std::cerr << ss.str() << std::endl;
-    }
+    //}
 }
 
 }
