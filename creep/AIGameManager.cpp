@@ -199,7 +199,7 @@ auto AIGameManager::evaluateTable(
     Point p;
     for (p.y = 0; p.y < static_cast<int>(status.height()); ++p.y) {
         for (p.x = 0; p.x < static_cast<int>(status.width()); ++p.x) {
-            if (potentialCreep[p] && areaExpiration[p] >= 0 &&
+            if (status.isCreep(p) && areaExpiration[p] >= 0 &&
                     (hasActiveQueen || !tumorSpreadPositions[p].empty())) {
                 result[p] = callNeuralNetwork(p);
             }
