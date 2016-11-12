@@ -34,6 +34,7 @@ private:
         float feedCurrent = 0.0f;
         float feedNeighbor = 0.0f;
     };
+
     using TumorSpreadPositions = Matrix<std::vector<const Tumor*>>;
 
     NeuronActivity callNeuralNetwork(Point base);
@@ -43,6 +44,7 @@ private:
     void calculatePotentialCreep();
     TumorSpreadPositions getTumorSpreadPositions();
     boost::optional<Point> addCommandIfPossible();
+    void calculateExpriation();
 
     CommonParameters commonParameters;
     GameInfo gameInfo;
@@ -51,6 +53,7 @@ private:
     NeuralNetwork neuralNetwork;
     Matrix<NeuronActivity> neuronActivity;
     Matrix<bool> potentialCreep;
+    Matrix<int> areaExpiration;
     boost::container::flat_set<Point> pendingPoints;
     boost::container::flat_set<const Tumor*> pendingTumors;
     boost::container::flat_set<const Queen*> pendingQueens;

@@ -67,6 +67,7 @@ void AIGameManager::init() {
     const auto& status = game->getStatus();
     initialFloorCount = status.getFloorsRemaining();
     potentialCreep.reset(status.width(), status.height(), false);
+    areaExpiration.reset(status.width(), status.height(), 0);
 }
 
 void AIGameManager::run() {
@@ -83,6 +84,7 @@ void AIGameManager::tick() {
     pendingTumors.clear();
     pendingQueens.clear();
     calculatePotentialCreep();
+    calculateExpriation();
     while (auto p = addCommandIfPossible()) {
         pendingPoints.insert(*p);
         calculatePotentialCreep();
@@ -94,13 +96,18 @@ boost::optional<Point> AIGameManager::addCommandIfPossible() {
     const auto& status = game->getStatus();
     auto tumorSpreadPositions = getTumorSpreadPositions();
     neuronActivity = evaluateTable(tumorSpreadPositions);
-    auto range = matrixRange(neuronActivity);
     std::vector<Point> candidates;
-    std::copy_if(range.begin(), range.end(), std::back_inserter(candidates),
-            [this, &status](Point p) {
-                return neuronActivity[p].activity > 0.0f &&
-                        status.isCreep(p) && pendingPoints.count(p) == 0;
-            });
+    {
+        Point p;
+        for (p.y = 0; p.y < static_cast<int>(status.height()); ++p.y) {
+            for (p.x = 0; p.x < static_cast<int>(status.width()); ++p.x) {
+                if (neuronActivity[p].activity > 0.0f &&
+                        status.isCreep(p) && pendingPoints.count(p) == 0) {
+                    candidates.push_back(p);
+                }
+            }
+        };
+    }
     std::sort(candidates.begin(), candidates.end(),
             [this](Point lhs, Point rhs) {
                 return neuronActivity[lhs].activity >
@@ -159,10 +166,13 @@ auto AIGameManager::evaluateTable(
                 return queen.energy > rules::queenEnertyRequirement;
             });
 
-    for (Point p : matrixRange(result)) {
-        if (status.isCreep(p) && (hasActiveQueen ||
-                !tumorSpreadPositions[p].empty())) {
-            result[p] = callNeuralNetwork(p);
+    Point p;
+    for (p.y = 0; p.y < static_cast<int>(status.height()); ++p.y) {
+        for (p.x = 0; p.x < static_cast<int>(status.width()); ++p.x) {
+            if (status.isCreep(p) && areaExpiration[p] >= 0 &&
+                    (hasActiveQueen || !tumorSpreadPositions[p].empty())) {
+                result[p] = callNeuralNetwork(p);
+            }
         }
     }
     return result;
@@ -225,8 +235,11 @@ auto AIGameManager::callNeuralNetwork(Point base) -> NeuronActivity {
 
 void AIGameManager::calculatePotentialCreep() {
     const auto& status = game->getStatus();
-    for (Point p : matrixRange(potentialCreep)) {
-        potentialCreep[p] = status.isCreep(p);
+    Point p;
+    for (p.y = 0; p.y < static_cast<int>(status.height()); ++p.y) {
+        for (p.x = 0; p.x < static_cast<int>(status.width()); ++p.x) {
+            potentialCreep[p] = status.isCreep(p);
+        }
     }
     auto setToTrue = [this](Point p) { potentialCreep[p] = true; };
     for (const Tumor& tumor : status.getTumors()) {
@@ -271,4 +284,23 @@ std::string AIGameManager::getDebugInfo() const {
     ss << "time=" << status.getTime() <<
             " floors=" << status.getFloorsRemaining();
     return ss.str();
+}
+
+void AIGameManager::calculateExpriation() {
+    const auto& status = game->getStatus();
+    Point p;
+    for (p.y = 0; p.y < static_cast<int>(status.height()); ++p.y) {
+        for (p.x = 0; p.x < static_cast<int>(status.width()); ++p.x) {
+            if (areaExpiration[p] > 0) {
+                --areaExpiration[p];
+                continue;
+            }
+            if (areaExpiration[p] == 0 && status.isCreep(p)) {
+                std::size_t count = countSpreadArea(getMax(status), p,
+                        rules::creepSpreadRadius,
+                        getPredicate(status, &Status::isFloor));
+                areaExpiration[p] = count - 1;
+            }
+        }
+    }
 }
