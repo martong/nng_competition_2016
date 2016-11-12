@@ -1,0 +1,13 @@
+include_rules
+
+include $(COMPILE_TUP)
+
+INCLUDE_DIRS += -I$(UTIL_DIR)
+#LIBS += -lgtest -lgmock
+
+: foreach *.cpp |> !cxx |>
+
+include $(LINK_TUP)
+
+: generator.o |> !linker |> generator
+: main.o $(UTIL_DIR)/*.o |> !linker |> lakotelep
