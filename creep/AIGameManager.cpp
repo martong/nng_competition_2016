@@ -68,6 +68,7 @@ void AIGameManager::init() {
     initialFloorCount = status.getFloorsRemaining();
     potentialCreep.reset(status.width(), status.height(), false);
     areaExpiration.reset(status.width(), status.height(), 0);
+    neuronActivity.reset(status.width(), status.height());
 }
 
 void AIGameManager::run() {
@@ -107,6 +108,7 @@ bool AIGameManager::addCommandIfPossible() {
             }
         };
     }
+    LOG << "Number of candidates: " << candidates.size() << "\n";
     std::sort(candidates.begin(), candidates.end(),
             [this](Point lhs, Point rhs) {
                 return neuronActivity[lhs].activity >
@@ -162,7 +164,7 @@ auto AIGameManager::evaluateTable(
     bool hasActiveQueen = std::any_of(
             status.getQueens().begin(), status.getQueens().end(),
             [](const Queen& queen) {
-                return queen.energy > rules::queenEnertyRequirement;
+                return queen.energy >= rules::queenEnertyRequirement;
             });
 
     Point p;
