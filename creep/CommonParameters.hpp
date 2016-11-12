@@ -9,7 +9,7 @@ LAZY_ARGUMENT_ENUM(LookaheadType, lookaheadTypes, (checkpoint))
 
 struct CommonParameters {
     static std::vector<int> checkDistances() {
-        return {1, 2, 5, 8, 9, 10, 11, 12, 15, 20};
+        return {1, 2, 5, 8, 10, 12, 15, 20};
     }
     static unsigned inputNeuronCount() {
         return checkDistances().size() * 4 + 7;
