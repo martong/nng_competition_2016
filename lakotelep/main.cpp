@@ -15,5 +15,8 @@ int main(int /*argc*/, const char* argv[]) {
         std::cerr << "bad\n";
     }
 
-    std::cout << solution << "\n";
+    for (Point p : solution) {
+        std::cout << p << " ";
+    }
+    std::cout << "\n";
 }
