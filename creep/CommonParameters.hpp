@@ -19,6 +19,9 @@ struct CommonParameters {
     constexpr static std::size_t outputNeuronActivity = 0;
     constexpr static std::size_t outputNeuronFeedCurrent = 0;
     constexpr static std::size_t outputNeuronFeedNeighbor = 0;
+
+    float fitnessFloorsCoveredMultiplier = 1.0;
+    float fitnessTimeRemainingMultiplier = 1.0;
 };
 
 class NeuralNetwork;

@@ -272,10 +272,10 @@ auto AIGameManager::getTumorSpreadPositions() -> TumorSpreadPositions {
 
 float AIGameManager::getFitness() const {
     const auto& status = game->getStatus();
-    return (game->getTimeLimit() - status.getTime()) *
-            fitnessTimeRemainingMultiplier +
-            (initialFloorCount - status.getFloorsRemaining()) *
-            fitnessFloorsCoveredMultiplier;
+    return static_cast<float>(game->getTimeLimit() - status.getTime()) /
+            game->getTimeLimit() * commonParameters.fitnessTimeRemainingMultiplier +
+            static_cast<float>(initialFloorCount - status.getFloorsRemaining()) /
+            initialFloorCount * commonParameters.fitnessFloorsCoveredMultiplier;
 }
 
 std::string AIGameManager::getDebugInfo() const {

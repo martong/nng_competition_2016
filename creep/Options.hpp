@@ -33,6 +33,7 @@ struct Options {
     Finder spreadRadiusMultiplierFinder;
     std::size_t numThreads = 1;
     LearningParameters learningParameters;
+    CommonParameters commonParameters;
 };
 
 Options parseOptions(int argc, const char* argv[]);

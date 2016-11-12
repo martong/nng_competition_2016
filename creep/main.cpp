@@ -119,6 +119,7 @@ void generate(const GameInfo& gameInfo, const Options& options) {
     gameManager.setNeuralNetwork(neuralNetwork);
     gameManager.init();
     gameManager.run();
+    std::cerr << "Fitness=" << gameManager.getFitness() << "\n";
     std::cout << gameManager.getCommands().size() << "\n";
     for (const Command& command : gameManager.getCommands()) {
         std::cout << command.time << " " << command.type << " " <<

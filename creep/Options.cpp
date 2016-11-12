@@ -89,6 +89,12 @@ Options parseOptions(int argc, const char* argv[]) {
             ("population-cutoff",
              defaultValue(result.learningParameters.populationCutoff),
              "The number of generations after the worst population is dropped (if there are more than one).")
+            ("fitness-floors-covered-multiplier",
+             defaultValue(result.commonParameters.fitnessFloorsCoveredMultiplier),
+             "The fitness multiplier for the number of floors covered")
+            ("fitness-time-remaining-multiplier",
+             defaultValue(result.commonParameters.fitnessTimeRemainingMultiplier),
+             "The fitness multiplier for the remaining time")
             ;
     po::options_description generateOptions{
             "Options for generating solution from neural network"};
