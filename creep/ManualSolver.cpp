@@ -52,6 +52,7 @@ private:
         const std::string& arg = args.at(1);
         int value = boost::lexical_cast<int>(arg);
         int currentTime = history.back().getStatus().getTime();
+        std::cerr << "Current time: " << currentTime << "\n";
         if (arg[0] == '+' || arg[0] == '-') {
             value += currentTime;
         }
@@ -61,13 +62,12 @@ private:
         }
 
         if (value > currentTime) {
-            while (history.back().canContinue() &&
-                    history.back().getStatus().getTime() != value) {
+            while (history.back().getStatus().getTime() != value) {
                 tick();
             }
         } else {
             // We will never grow, but C++ requires something just in case
-            history.resize(value, history.back());
+            history.resize(value + 1, history.back());
         }
         history.back().print(std::cout);
     }
