@@ -1,5 +1,6 @@
 #include "PopulationRunner.hpp"
 
+#include <iostream>
 #include <mutex>
 #include <condition_variable>
 #include <boost/range/adaptor/transformed.hpp>
@@ -53,7 +54,7 @@ void PopulationRunner::runIteration() {
 
         ioService->post([this, &genome, &data, &tasksLeft, &conditionVariable, &mutex]() {
                 runSimulation(genome, data);
-
+                std::cerr << ".";
                 {
                     std::unique_lock<std::mutex> lock{mutex};
                     if (--tasksLeft == 0) {
@@ -68,6 +69,7 @@ void PopulationRunner::runIteration() {
         while (tasksLeft != 0) {
             conditionVariable.wait(lock);
         }
+        std::cerr << "\n";
     }
 
     updateBestFitness();

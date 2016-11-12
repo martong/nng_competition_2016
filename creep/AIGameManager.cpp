@@ -64,7 +64,9 @@ AIGameManager::AIGameManager(const CommonParameters& commonParameters,
 
 void AIGameManager::init() {
     game = std::make_unique<Game>(gameInfo);
-    initialFloorCount = game->getStatus().getFloorsRemaining();
+    const auto& status = game->getStatus();
+    initialFloorCount = status.getFloorsRemaining();
+    potentialCreep.reset(status.width(), status.height(), false);
 }
 
 void AIGameManager::run() {
@@ -80,8 +82,10 @@ void AIGameManager::tick() {
     pendingPoints.clear();
     pendingTumors.clear();
     pendingQueens.clear();
+    calculatePotentialCreep();
     while (auto p = addCommandIfPossible()) {
         pendingPoints.insert(*p);
+        calculatePotentialCreep();
     }
     game->tick();
 }
@@ -168,7 +172,6 @@ auto AIGameManager::callNeuralNetwork(Point base) -> NeuronActivity {
     const auto& status = game->getStatus();
     Weights inputs;
     inputs.reserve(CommonParameters::inputNeuronCount());
-    auto potentialCreep = getPotentialCreep();
     // what is there at different distances
     for (std::size_t i = 0; i < CommonParameters::checkDistances().size(); ++i) {
         inputs.push_back(calculateDistanceWeight(status, base, i,
@@ -178,14 +181,14 @@ auto AIGameManager::callNeuralNetwork(Point base) -> NeuronActivity {
         inputs.push_back(calculateDistanceWeight(status, base, i,
                 getPredicate(status, &Status::isFloor)));
         inputs.push_back(calculateDistanceWeight(status, base, i,
-                [&potentialCreep, base](Point p) {
+                [this, base](Point p) {
                     return potentialCreep[p];
                 }));
     }
     // How much the potential creep area is increased
     inputs.push_back(calculateDistanceWeight(status, base,
             rules::creepSpreadRadius, spreadRadiusTotalCount,
-            [&potentialCreep, status, base](Point p) {
+            [this, status, base](Point p) {
                 return potentialCreep[p] && !status.isCreep(p);
             }));
     // game time
@@ -220,13 +223,12 @@ auto AIGameManager::callNeuralNetwork(Point base) -> NeuronActivity {
             result[CommonParameters::outputNeuronFeedNeighbor]};
 }
 
-Matrix<bool> AIGameManager::getPotentialCreep() {
+void AIGameManager::calculatePotentialCreep() {
     const auto& status = game->getStatus();
-    Matrix<bool> result{status.width(), status.height()};
-    for (Point p : matrixRange(result)) {
-        result[p] = status.isCreep(p);
+    for (Point p : matrixRange(potentialCreep)) {
+        potentialCreep[p] = status.isCreep(p);
     }
-    auto setToTrue = [&result](Point p) { result[p] = true; };
+    auto setToTrue = [this](Point p) { potentialCreep[p] = true; };
     for (const Tumor& tumor : status.getTumors()) {
         iterateSpreadArea(getMax(status), tumor.position,
                 rules::creepSpreadRadius, setToTrue);
@@ -235,7 +237,6 @@ Matrix<bool> AIGameManager::getPotentialCreep() {
         iterateSpreadArea(getMax(status), p, rules::creepSpreadRadius,
                 setToTrue);
     }
-    return result;
 }
 
 auto AIGameManager::getTumorSpreadPositions() -> TumorSpreadPositions {

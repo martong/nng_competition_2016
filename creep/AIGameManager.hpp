@@ -40,7 +40,7 @@ private:
     void tick();
     Matrix<NeuronActivity> evaluateTable(
             Matrix<std::vector<const Tumor*>> tumorSpreadPositions);
-    Matrix<bool> getPotentialCreep();
+    void calculatePotentialCreep();
     TumorSpreadPositions getTumorSpreadPositions();
     boost::optional<Point> addCommandIfPossible();
 
@@ -50,6 +50,7 @@ private:
     int initialFloorCount = 0;
     NeuralNetwork neuralNetwork;
     Matrix<NeuronActivity> neuronActivity;
+    Matrix<bool> potentialCreep;
     boost::container::flat_set<Point> pendingPoints;
     boost::container::flat_set<const Tumor*> pendingTumors;
     boost::container::flat_set<const Queen*> pendingQueens;
