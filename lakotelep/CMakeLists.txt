@@ -21,4 +21,6 @@ add_executable(lakotelep_test test.cpp)
 target_link_libraries(lakotelep_test gtest gmock_main)
 add_test(NAME lakotelep_test COMMAND lakotelep_test)
 
+add_executable(lakotelep_main main.cpp)
+
 #add_executable(main solution.cpp main.cpp)

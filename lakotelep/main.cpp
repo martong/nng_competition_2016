@@ -1,11 +1,7 @@
-#include "generator.hpp"
-#include "solution.hpp"
-#include "MatrixIO.hpp"
-
-#include <iostream>
+#include "all.cpp"
 
 int main(int /*argc*/, const char* argv[]) {
-    auto m = generate(atoi(argv[1]), atoi(argv[2]));
+    auto m = pair::generate(atoi(argv[1]), atoi(argv[2]));
     std::cerr << "Unmodified matrix:\n" << m.first <<
             "\nProblem:\n" << m.second << "\n";
     auto solution = solve(m.second);
