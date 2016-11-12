@@ -84,11 +84,10 @@ void AIGameManager::tick() {
     pendingPoints.clear();
     pendingTumors.clear();
     pendingQueens.clear();
-    calculatePotentialCreep();
-    calculateExpriation();
-    while (addCommandIfPossible()) {
+    do {
         calculatePotentialCreep();
-    }
+        calculateExpriation();
+    } while (addCommandIfPossible());
     game->tick();
 }
 
