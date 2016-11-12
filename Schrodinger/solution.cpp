@@ -82,6 +82,7 @@ V RlogN(size_t NumberOfBalls, size_t RadioactiveBalls, TestFun testFun) {
     V res;
     V remaining(NumberOfBalls);
     std::iota(remaining.begin(), remaining.end(), 0);
+    std::random_shuffle(remaining.begin(), remaining.end());
     TestFunW testFunW{testFun, res};
     assert(NumberOfBalls >= 1);
     while (res.size() < RadioactiveBalls) {
