@@ -23,6 +23,7 @@ public:
     void init();
     float getFitness() const;
     std::string getDebugInfo() const;
+    std::vector<Command> getCommands() const;
 private:
     struct NeuronActivity {
         NeuronActivity() = default;
@@ -43,8 +44,9 @@ private:
             Matrix<std::vector<const Tumor*>> tumorSpreadPositions);
     void calculatePotentialCreep();
     TumorSpreadPositions getTumorSpreadPositions();
-    boost::optional<Point> addCommandIfPossible();
+    bool addCommandIfPossible();
     void calculateExpriation();
+    void addCommand(const Command& command);
 
     CommonParameters commonParameters;
     GameInfo gameInfo;

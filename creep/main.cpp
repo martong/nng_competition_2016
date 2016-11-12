@@ -1,3 +1,4 @@
+#include "AIGameManager.hpp"
 #include "Game.hpp"
 #include "Options.hpp"
 #include "Solver.hpp"
@@ -5,6 +6,8 @@
 
 #include <util/PrefixMap.hpp>
 #include <util/ThreadPool.hpp>
+
+#include <boost/archive/text_iarchive.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -106,11 +109,30 @@ void neural(const GameInfo& gameInfo, const Options& options) {
     threadPool.wait();
 }
 
+void generate(const GameInfo& gameInfo, const Options& options) {
+    NeuralNetwork neuralNetwork;
+    std::ifstream fs{options.aiFileName};
+    boost::archive::text_iarchive ar(fs);
+    ar >> neuralNetwork;
+    AIGameManager gameManager{options.learningParameters.commonParameters,
+            gameInfo};
+    gameManager.setNeuralNetwork(neuralNetwork);
+    gameManager.init();
+    gameManager.run();
+    std::cout << gameManager.getCommands().size() << "\n";
+    for (const Command& command : gameManager.getCommands()) {
+        std::cout << command.time << " " << command.type << " " <<
+                command.id << " " << command.position.x << " " <<
+                command.position.y << "\n";
+    }
+}
+
 int main(int argc, const char* argv[]) {
     Options options = parseOptions(argc, argv);
     util::PrefixMap<void(*)(const GameInfo&, const Options&)> actions{
             {"simulate", simulate},
             {"neural", neural},
+            {"generate", generate},
             {"solve", solve}};
     std::ifstream inputFile{options.inputFileName};
     GameInfo gameInfo{loadGameInfo(inputFile)};

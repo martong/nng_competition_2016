@@ -27,6 +27,7 @@ void iterateFinder(const Finder& finder, const Function& function) {
 struct Options {
     std::string type;
     std::string inputFileName;
+    std::string aiFileName;
     Finder timeMultiplierFinder;
     Finder distanceSquareMultiplierFinder;
     Finder spreadRadiusMultiplierFinder;

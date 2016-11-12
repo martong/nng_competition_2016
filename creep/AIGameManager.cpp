@@ -85,14 +85,13 @@ void AIGameManager::tick() {
     pendingQueens.clear();
     calculatePotentialCreep();
     calculateExpriation();
-    while (auto p = addCommandIfPossible()) {
-        pendingPoints.insert(*p);
+    while (addCommandIfPossible()) {
         calculatePotentialCreep();
     }
     game->tick();
 }
 
-boost::optional<Point> AIGameManager::addCommandIfPossible() {
+bool AIGameManager::addCommandIfPossible() {
     const auto& status = game->getStatus();
     auto tumorSpreadPositions = getTumorSpreadPositions();
     neuronActivity = evaluateTable(tumorSpreadPositions);
@@ -114,10 +113,10 @@ boost::optional<Point> AIGameManager::addCommandIfPossible() {
                         neuronActivity[rhs].activity;
             });
     for (Point p : candidates) {
-        LOG << "Candidate point " << p <<
-                " activity=" << neuronActivity[p].activity << "\n";
+        //LOG << "Candidate point " << p <<
+                //" activity=" << neuronActivity[p].activity << "\n";
         if (neuronActivity[p].activity <= 0.0f) {
-            return boost::none;
+            return false;
         }
         for (const Tumor* tumor : tumorSpreadPositions[p]) {
             if (pendingTumors.count(tumor) != 0) {
@@ -126,9 +125,9 @@ boost::optional<Point> AIGameManager::addCommandIfPossible() {
             LOG << "Adding from tumor " << tumor->id << " " <<
                     tumor->position << "\n";
             pendingTumors.insert(tumor);
-            game->addCommand({status.getTime(),
+            addCommand({status.getTime(),
                     CommandType::PlaceTumorFromTumor, tumor->id, p});
-            return p;
+            return true;
         }
         std::vector<const Queen*> queens(status.getQueens().size());
         std::transform(status.getQueens().begin(), status.getQueens().end(),
@@ -146,13 +145,13 @@ boost::optional<Point> AIGameManager::addCommandIfPossible() {
                 LOG << "Adding from queen " << queen->id <<
                         " energy=" << queen->energy << "\n";
                 pendingQueens.insert(queen);
-                game->addCommand({status.getTime(),
+                addCommand({status.getTime(),
                         CommandType::PlaceTumorFromQueen, queen->id, p});
-                return p;
+                return true;
             }
         }
     }
-    return boost::none;
+    return false;
 }
 
 auto AIGameManager::evaluateTable(
@@ -303,4 +302,22 @@ void AIGameManager::calculateExpriation() {
             }
         }
     }
+}
+
+
+void AIGameManager::addCommand(const Command& command) {
+    LOG << "Adding command: time=" << command.time <<
+            " type=" << command.type <<
+            " id=" << command.id <<
+            " position=" << command.position << "\n";
+    game->addCommand(command);
+    pendingPoints.insert(command.position);
+}
+
+std::vector<Command> AIGameManager::getCommands() const {
+    std::vector<Command> result;
+    std::transform(game->getCommands().begin(), game->getCommands().end(),
+            std::back_inserter(result),
+            [](const auto& element) { return element.second; });
+    return result;
 }

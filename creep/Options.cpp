@@ -90,10 +90,18 @@ Options parseOptions(int argc, const char* argv[]) {
              defaultValue(result.learningParameters.populationCutoff),
              "The number of generations after the worst population is dropped (if there are more than one).")
             ;
+    po::options_description generateOptions{
+            "Options for generating solution from neural network"};
+    generateOptions.add_options()
+            ("ai-file-name,f",
+             defaultValue(result.aiFileName),
+             "The file where the neural network is stored.")
+            ;
     po::options_description options;
     options.add(commonOptions);
     options.add(solveOptions);
     options.add(neuralOptions);
+    options.add(generateOptions);
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).
             options(options).run(), vm);
