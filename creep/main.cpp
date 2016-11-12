@@ -98,6 +98,7 @@ void solve(const GameInfo& gameInfo, const Options& options) {
 
 void neural(const GameInfo& gameInfo, const Options& options) {
     util::ThreadPool threadPool{options.numThreads};
+    threadPool.start();
     boost::asio::io_service& ioService = threadPool.getIoService();
     LearningController learningController{options.learningParameters,
         {gameInfo}, ioService};

@@ -50,7 +50,9 @@ private:
     int initialFloorCount = 0;
     NeuralNetwork neuralNetwork;
     Matrix<NeuronActivity> neuronActivity;
-    boost::container::flat_set<Point> pendingTumors;
+    boost::container::flat_set<Point> pendingPoints;
+    boost::container::flat_set<const Tumor*> pendingTumors;
+    boost::container::flat_set<const Queen*> pendingQueens;
 
     static constexpr float fitnessFloorsRemainingMultiplier = 100.0;
     static constexpr float fitnessTimeRemainingMultiplier = 1.0;

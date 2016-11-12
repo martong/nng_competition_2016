@@ -12,7 +12,7 @@ struct CommonParameters {
         return {1, 2, 5, 8, 9, 10, 11, 12, 15, 20};
     }
     static unsigned inputNeuronCount() {
-        return checkDistances().size() * 4 + 5;
+        return checkDistances().size() * 4 + 7;
     }
     constexpr static unsigned outputNeuronCount() { return 3; }
 

@@ -3,6 +3,7 @@
 #include "Constants.hpp"
 #include "Spread.hpp"
 #include "Status.hpp"
+#include "Log.hpp"
 
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -67,15 +68,20 @@ void AIGameManager::init() {
 }
 
 void AIGameManager::run() {
-    while (game->canContinue()) {
+    LOG << "Start simulation\n";
+    while (game->hasTime() && game->getStatus().getFloorsRemaining() > 0) {
         tick();
     }
 }
 
 void AIGameManager::tick() {
+    LOG << "Tick " << game->getStatus().getTime() << "\n";
+    //game->print(LOG);
+    pendingPoints.clear();
     pendingTumors.clear();
+    pendingQueens.clear();
     while (auto p = addCommandIfPossible()) {
-        pendingTumors.insert(*p);
+        pendingPoints.insert(*p);
     }
     game->tick();
 }
@@ -89,7 +95,7 @@ boost::optional<Point> AIGameManager::addCommandIfPossible() {
     std::copy_if(range.begin(), range.end(), std::back_inserter(candidates),
             [this, &status](Point p) {
                 return neuronActivity[p].activity > 0.0f &&
-                        status.isCreep(p) && pendingTumors.count(p) == 0;
+                        status.isCreep(p) && pendingPoints.count(p) == 0;
             });
     std::sort(candidates.begin(), candidates.end(),
             [this](Point lhs, Point rhs) {
@@ -97,15 +103,21 @@ boost::optional<Point> AIGameManager::addCommandIfPossible() {
                         neuronActivity[rhs].activity;
             });
     for (Point p : candidates) {
+        LOG << "Candidate point " << p <<
+                " activity=" << neuronActivity[p].activity << "\n";
         if (neuronActivity[p].activity <= 0.0f) {
             return boost::none;
         }
         for (const Tumor* tumor : tumorSpreadPositions[p]) {
-            if (tumor->position == p) {
-                game->addCommand({status.getTime(),
-                        CommandType::PlaceTumorFromTumor, tumor->id, p});
-                return p;
+            if (pendingTumors.count(tumor) != 0) {
+                continue;
             }
+            LOG << "Adding from tumor " << tumor->id << " " <<
+                    tumor->position << "\n";
+            pendingTumors.insert(tumor);
+            game->addCommand({status.getTime(),
+                    CommandType::PlaceTumorFromTumor, tumor->id, p});
+            return p;
         }
         std::vector<const Queen*> queens(status.getQueens().size());
         std::transform(status.getQueens().begin(), status.getQueens().end(),
@@ -116,7 +128,13 @@ boost::optional<Point> AIGameManager::addCommandIfPossible() {
                     return lhs->energy < rhs->energy;
                 });
         for (const Queen* queen : queens) {
-            if (queen->energy > rules::queenEnertyRequirement) {
+            if (queen->energy >= rules::queenEnertyRequirement) {
+                if (pendingQueens.count(queen) != 0) {
+                    continue;
+                }
+                LOG << "Adding from queen " << queen->id <<
+                        " energy=" << queen->energy << "\n";
+                pendingQueens.insert(queen);
                 game->addCommand({status.getTime(),
                         CommandType::PlaceTumorFromQueen, queen->id, p});
                 return p;
@@ -213,7 +231,7 @@ Matrix<bool> AIGameManager::getPotentialCreep() {
         iterateSpreadArea(getMax(status), tumor.position,
                 rules::creepSpreadRadius, setToTrue);
     }
-    for (Point p : pendingTumors) {
+    for (Point p : pendingPoints) {
         iterateSpreadArea(getMax(status), p, rules::creepSpreadRadius,
                 setToTrue);
     }
