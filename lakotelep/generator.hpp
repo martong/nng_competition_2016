@@ -15,13 +15,13 @@ Matrix<int> build(int m, int n, const std::vector<Point>& ps) {
         for (const auto n : ns) {
             auto& v = mx[n];
             if (v >= 1) ++v;
-            if (v > 4) v = 1;
+            //if (v > 4) v = 1;
         }
     }
     return mx;
 }
 
-Matrix<int> generate(int m, int n) {
+std::pair<Matrix<int>, Matrix<int>> generate(int m, int n) {
     //std::vector<std::vector<int>> result;
 
     std::vector<Point> ps;
@@ -35,7 +35,12 @@ Matrix<int> generate(int m, int n) {
     std::mt19937 g(rd());
     std::shuffle(ps.begin(), ps.end(), g);
 
-    return build(m, n, ps);
+    auto first = build(m, n, ps);
+    auto second = first;
+    for (int& i : second) {
+        if (i > 4) i = 1;
+    }
+    return {first, second};
 }
 
 bool check(const std::vector<Point>& ps, const Matrix<int>& expected) {

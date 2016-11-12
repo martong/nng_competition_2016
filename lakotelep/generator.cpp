@@ -17,8 +17,9 @@ int main2() {
     return 0;
 }
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** argv) {
     auto m = generate(atoi(argv[1]), atoi(argv[2]));
-    std::cout << m;
+    std::cerr << m.first;
+    std::cout << m.second;
     return 0;
 }
