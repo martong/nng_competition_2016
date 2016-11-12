@@ -29,7 +29,7 @@ public:
         if (length < bestScore) {
             bestScore = length;
             std::ofstream of{"output." +
-                                boost::lexical_cast<std::string>(fileNumber) +
+                                boost::lexical_cast<std::string>(fileNumber++) +
                                 ".txt",
                         std::ios::out | std::ios::trunc};
             for (const auto& elem : chain) {
