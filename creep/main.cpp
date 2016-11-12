@@ -2,6 +2,7 @@
 #include "Game.hpp"
 #include "Options.hpp"
 #include "LearningController.hpp"
+#include "ManualSolver.hpp"
 
 #include <util/PrefixMap.hpp>
 #include <util/ThreadPool.hpp>
@@ -57,12 +58,17 @@ void generate(const GameInfo& gameInfo, const Options& options) {
     }
 }
 
+void manual(const GameInfo& gameInfo, const Options& /*options*/) {
+    solveManually(gameInfo);
+}
+
 int main(int argc, const char* argv[]) {
     Options options = parseOptions(argc, argv);
     util::PrefixMap<void(*)(const GameInfo&, const Options&)> actions{
             {"simulate", simulate},
             {"neural", neural},
             {"generate", generate},
+            {"manual", manual},
         };
     std::ifstream inputFile{options.inputFileName};
     GameInfo gameInfo{loadGameInfo(inputFile)};

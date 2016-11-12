@@ -5,14 +5,18 @@
 #include "Spread.hpp"
 
 #include <algorithm>
-#include <assert.h>
+#include <stdexcept>
 
 namespace {
 
 template<typename Ts>
 typename Ts::reference findObjectWithId(Ts& ts, int id) {
-    return *std::find_if(ts.begin(), ts.end(),
+    auto iterator = std::find_if(ts.begin(), ts.end(),
             [id](const auto& element) { return element.id == id; });
+    if (iterator == ts.end()) {
+        throw std::logic_error{"Invalid id."};
+    }
+    return *iterator;
 }
 
 } // unnamed namespace
@@ -63,14 +67,20 @@ void Status::tick() {
 
 const Tumor& Status::addTumorFromQueen(int id, Point position) {
     Queen& queen = findObjectWithId(queens, id);
-    assert(queen.energy >= rules::queenEnertyRequirement);
+    if (queen.energy < rules::queenEnertyRequirement) {
+        throw std::logic_error{"Queen has not enough energy."};
+    }
     queen.energy -= rules::queenEnertyRequirement;
     return addTumor(position);
 }
 
 const Tumor& Status::addTumorFromTumor(int id, Point position) {
     Tumor& tumor = findObjectWithId(tumors, id);
-    assert(tumor.cooldown == 0);
+    if (tumor.cooldown > 0) {
+        throw std::logic_error{"Tumor is still cooling down."};
+    } else if (tumor.cooldown < 0) {
+        throw std::logic_error{"Tumor has already been used."};
+    }
     tumor.cooldown = -1;
     return addTumor(position);
 }
@@ -109,7 +119,9 @@ bool Status::spreadCreepFrom(Point p, std::size_t hash) {
 }
 
 const Tumor& Status::addTumor(Point position) {
-    assert(isCreep(position));
+    if (!isCreep(position)) {
+        throw std::logic_error{"Attempt to put tumor on not creep."};
+    }
     tumors.emplace_back(nextId++, position, rules::tumorCooldownTime);
     table[position] = MapElement::Building;
     const Tumor& result = tumors.back();

@@ -56,7 +56,7 @@ public:
             Commands::const_iterator to);
 
     void tick();
-    void print(std::ostream& stream);
+    void print(std::ostream& stream) const;
 
     const Status& getStatus() const { return status; }
     const Commands& getCommands() const { return commands; }

@@ -47,7 +47,7 @@ void Game::tick() {
 
 }
 
-void Game::print(std::ostream& stream) {
+void Game::print(std::ostream& stream) const {
     stream << "Tick " << status.getTime() << "\n";
     for (const Tumor& tumor : status.getTumors()) {
         stream << "Tumor #" << tumor.id << ": " << tumor.position <<
