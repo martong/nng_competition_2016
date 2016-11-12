@@ -43,6 +43,36 @@ Weight calculateDistanceWeight(const Status& status, Point p,
             totalCounts[distanceIndex], predicate);
 }
 
+struct Statistic {
+    float min = 1.0f;
+    float max = -1.0f;
+    float avg = 0.0f;
+};
+
+template<typename Function>
+boost::optional<Statistic> calculateDistanceStatistic(
+        const Status& status, Point p, std::size_t distanceIndex,
+        const Function& function) {
+    Statistic result;
+    int number = 0;
+    iterateSpreadArea(getMax(status), p,
+            CommonParameters::neighborOutputDistances()[distanceIndex],
+            [&function, &result, &number](Point p) {
+                float value = function(p);
+                if (value != 0.0f) {
+                    result.max = std::max(result.max, value);
+                    result.min = std::min(result.min, value);
+                    result.avg += value;
+                    ++number;
+                }
+            });
+    if (number == 0) {
+        return boost::none;
+    }
+    result.avg /= number;
+    return result;
+}
+
 struct GetDistanceSquare {
     GetDistanceSquare(Point p) : p(p) {}
 
@@ -114,8 +144,8 @@ bool AIGameManager::addCommandIfPossible() {
                         neuronActivity[rhs].activity;
             });
     for (Point p : candidates) {
-        //LOG << "Candidate point " << p <<
-                //" activity=" << neuronActivity[p].activity << "\n";
+        LOG << "Candidate point " << p <<
+                " activity=" << neuronActivity[p].activity << "\n";
         if (neuronActivity[p].activity <= 0.0f) {
             return false;
         }
@@ -220,17 +250,34 @@ auto AIGameManager::callNeuralNetwork(Point base) -> NeuronActivity {
                 distances.begin(), distances.end())));
     // Inputs from previous round
     inputs.push_back(neuronActivity[base].feedCurrent);
-    inputs.push_back((
-            matrixAt(neuronActivity, base + p10, {}).feedNeighbor +
-            matrixAt(neuronActivity, base - p10, {}).feedNeighbor +
-            matrixAt(neuronActivity, base + p01, {}).feedNeighbor +
-            matrixAt(neuronActivity, base - p01, {}).feedNeighbor) / 4.0f);
+    for (std::size_t i = 0;
+            i < CommonParameters::neighborOutputDistances().size(); ++i) {
+        auto statistic = calculateDistanceStatistic(status, base, i,
+                [this, i](Point p) {
+                    return neuronActivity[p].feedNeighbor[i];
+                });
+        if (statistic) {
+            inputs.push_back(statistic->min);
+            inputs.push_back(statistic->max);
+            inputs.push_back(statistic->avg);
+        } else {
+            inputs.push_back(0.0f);
+            inputs.push_back(0.0f);
+            inputs.push_back(0.0f);
+        }
+    }
     assert(inputs.size() == CommonParameters::inputNeuronCount());
     auto result = neuralNetwork.evaluateInput(inputs);
     assert(result.size() == CommonParameters::outputNeuronCount());
+    std::vector<float> feedNeighbor(
+            CommonParameters::neighborOutputDistances().size());
+    for (std::size_t i = 0; i < feedNeighbor.size(); ++i) {
+        feedNeighbor[i] =
+                result[CommonParameters::outputNeuronFeedNeighborStart + i];
+    }
     return {result[CommonParameters::outputNeuronActivity],
             result[CommonParameters::outputNeuronFeedCurrent],
-            result[CommonParameters::outputNeuronFeedNeighbor]};
+            std::move(feedNeighbor)};
 }
 
 void AIGameManager::calculatePotentialCreep() {

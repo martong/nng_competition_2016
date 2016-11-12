@@ -11,14 +11,20 @@ struct CommonParameters {
     static std::vector<int> checkDistances() {
         return {1, 2, 5, 8, 10, 12, 15, 20};
     }
-    static unsigned inputNeuronCount() {
-        return checkDistances().size() * 4 + 7;
+    static std::vector<int> neighborOutputDistances() {
+        return {1, 2, 5, 10};
     }
-    constexpr static unsigned outputNeuronCount() { return 3; }
+    static unsigned inputNeuronCount() {
+        return checkDistances().size() * 4 +
+                neighborOutputDistances().size() * 3 + 6;
+    }
+    static unsigned outputNeuronCount() {
+        return neighborOutputDistances().size() + 2;
+    }
 
     constexpr static std::size_t outputNeuronActivity = 0;
-    constexpr static std::size_t outputNeuronFeedCurrent = 0;
-    constexpr static std::size_t outputNeuronFeedNeighbor = 0;
+    constexpr static std::size_t outputNeuronFeedCurrent = 1;
+    constexpr static std::size_t outputNeuronFeedNeighborStart = 2;
 
     float fitnessFloorsCoveredMultiplier = 1.0;
     float fitnessTimeRemainingMultiplier = 1.0;

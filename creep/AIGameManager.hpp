@@ -26,14 +26,17 @@ public:
     std::vector<Command> getCommands() const;
 private:
     struct NeuronActivity {
-        NeuronActivity() = default;
-        NeuronActivity(float activity, float feedCurrent, float feedNeighbor) :
+        NeuronActivity() : feedNeighbor(
+                CommonParameters::neighborOutputDistances().size(), 0.0f) {}
+
+        NeuronActivity(float activity, float feedCurrent,
+                std::vector<float> feedNeighbor) :
                 activity(activity), feedCurrent(feedCurrent),
-                feedNeighbor(feedNeighbor) {}
+                feedNeighbor(std::move(feedNeighbor)) {}
 
         float activity = -1.0f;
         float feedCurrent = 0.0f;
-        float feedNeighbor = 0.0f;
+        std::vector<float> feedNeighbor;
     };
 
     using TumorSpreadPositions = Matrix<std::vector<const Tumor*>>;
