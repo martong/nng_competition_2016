@@ -9,5 +9,4 @@ INCLUDE_DIRS += -I$(UTIL_DIR)
 
 include $(LINK_TUP)
 
-: generator.o |> !linker |> generator
-: main.o $(UTIL_DIR)/*.o |> !linker |> lakotelep
+: main.o |> !linker |> lakotelep
