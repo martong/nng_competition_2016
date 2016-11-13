@@ -5,25 +5,37 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <iostream>
 
-void removeOne(std::pair<Matrix<int>, Matrix<int>>& mxPair,
+#include <readline/history.h>
+#include <readline/readline.h>
+
+bool removeOne(std::pair<Matrix<int>, Matrix<int>>& mxPair,
         const Point& point) {
     if (mxPair.first[point] != 1) {
         std::cout << "Wrong one selected: (" << point.x << ',' <<point.y
                   << std::endl;
-        return;
+        return false;
+    }
+    auto neighbours = getNeigbors(mxPair.first, point);
+    for (const auto& neighbour : neighbours) {
+        if (mxPair.second[neighbour] == 1) {
+            std::cerr << "You cannot remove an 1 next to another 1\n";
+            return false;
+        }
     }
     --mxPair.first[point];
     --mxPair.second[point];
-    auto neighbours = getNeigbors(mxPair.first, point);
     for (const auto& neighbour : neighbours) {
         if (mxPair.first[neighbour] > 0) {
             --mxPair.first[neighbour];
             --mxPair.second[neighbour];
         }
     }
+    return true;
 }
 
 Point getPoint(const std::string& word) {
@@ -295,6 +307,20 @@ void doAutomaticMove(std::pair<Matrix<int>, Matrix<int>>& mxPair,
     }
 }
 
+bool readLine(std::vector<std::string>& words) {
+    std::unique_ptr<char[], void(*)(void*)> rawLine{
+            readline("> "), free};
+    if (!rawLine) {
+        return false;
+    }
+    if (rawLine[0] != 0) {
+        add_history(rawLine.get());
+    }
+    std::string line = rawLine.get();
+    boost::algorithm::split(words, line, boost::algorithm::is_space());
+    return true;
+}
+
 int main(int argc, char* argv[]) {
     assert(argc == 3);
 
@@ -304,40 +330,39 @@ int main(int argc, char* argv[]) {
     std::cout << "q: quit; b: back; r x,y: remove 1 from x,y; 5 x,y; "
             "x,y is identified as a 5; a: automatic move" << std::endl;
 
-    std::string word;
+    std::vector<std::string> words;
     std::vector<std::pair<Matrix<int>, Matrix<int>>> states;
     states.push_back(mxPair);
     std::vector<Point> pointsRemoved;
     do {
-        if (word != "") {
-            if (word == "q") {
+        if (words.empty()) {
+            if (words[0] == "q") {
                 return 0;
-            } else if (word == "b" && states.size() > 0) {
+            } else if (words[0] == "b" && states.size() > 0) {
                 states.pop_back();
                 mxPair = states.back();
-            } else if (word == "r") {
-                std::cin >> word;
-                Point point = getPoint(word);
+            } else if (words[0] == "r") {
+                Point point = getPoint(words[1]);
                 if (mxPair.first[point] != 1) {
                     std::cout << point.x << ',' << point.y
                               << "  is not 1!" << std::endl;
                     continue;
                 }
-                removeOne(mxPair, point);
-                states.push_back(mxPair);
-                pointsRemoved.push_back(point);
-            } else if (word == "5") {
-                std::cin >> word;
-                Point point = getPoint(word);
+                if (removeOne(mxPair, point)) {
+                    states.push_back(mxPair);
+                    pointsRemoved.push_back(point);
+                }
+            } else if (words[0] == "5") {
+                Point point = getPoint(words[1]);
                 if (!setFive(mxPair, point)) {
                     std::cout << point.x << ',' << point.y << " is not 5!"
                               << std::endl;
                 }
-            } else if (word == "a") {
+            } else if (words[0] == "a") {
                 doAutomaticMove(mxPair, pointsRemoved);
                 states.push_back(mxPair);
             } else {
-                std::cout << "Unknown command: " << word << std::endl;
+                std::cout << "Unknown command: " << words[0] << std::endl;
                 continue;
             }
         }
@@ -353,5 +378,5 @@ int main(int argc, char* argv[]) {
             std::cout << std::endl;
             return 0;
         }
-    } while (std::cin >> word);
+    } while (readLine(words));
 }
