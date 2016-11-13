@@ -910,6 +910,24 @@ void check_if_really_1 (const Matrix<int>& diag, const std::vector<Point>& st){
     }
 }
 
+void get_group_impl(const Matrix<int>& m, Point p, int value,
+               Matrix<bool>& marked,
+               std::vector<Point>& result) {
+    marked[p] = true;
+    result.push_back(p);
+    for (auto n : getNeigbors(m, p, value)) {
+        if(!marked[n]) get_group_impl(m, n, value, marked, result);
+    }
+}
+
+// Returns a group, the groups first two elements are neigbors.
+std::vector<Point> get_group(const Matrix<int>& m, Point p, int value) {
+    Matrix<bool> marked{m.width(), m.height()};
+    std::vector<Point> result;
+    get_group_impl(m, p, value, marked, result);
+    return result;
+}
+
 std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) {
     if (diag.size()) std::cout << "DIAG:\n" << diag;
 
