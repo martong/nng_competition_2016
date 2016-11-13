@@ -12,18 +12,23 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
-void removeOne(std::pair<Matrix<int>, Matrix<int>>& mxPair, const Point& point) {
+bool removeOne(std::pair<Matrix<int>, Matrix<int>>& mxPair, const Point& point) {
     mxPair.first[point] = 0;
     mxPair.second[point] = 0;
     auto neighbours = getNeigbors(mxPair.first, point);
     for (const auto& neighbour : neighbours) {
-        if (mxPair.first[neighbour] > 0) {
-            --mxPair.first[neighbour];
-            if (--mxPair.second[neighbour] == 0) {
-                mxPair.second[neighbour] = 4;
-            }
+        if (mxPair.second[neighbour] == 1) {
+            std::cerr << "You cannot remove an 1 next to another 1\n";
+            return false;
         }
     }
+    for (const auto& neighbour : neighbours) {
+        if (mxPair.first[neighbour] > 0) {
+            --mxPair.first[neighbour];
+            --mxPair.second[neighbour];
+        }
+    }
+    return true;
 }
 
 Point getPoint(const std::string& word) {
@@ -50,6 +55,20 @@ bool setFive(std::pair<Matrix<int>, Matrix<int>>& mxPair, const Point& point) {
         return true;
     }
     return false;
+}
+
+bool readLine(std::vector<std::string>& words) {
+    std::unique_ptr<char[], void(*)(void*)> rawLine{
+            readline("> "), free};
+    if (!rawLine) {
+        return false;
+    }
+    if (rawLine[0] != 0) {
+        add_history(rawLine.get());
+    }
+    std::string line = rawLine.get();
+    boost::algorithm::split(words, line, boost::algorithm::is_space());
+    return true;
 }
 
 int main(int argc, char* argv[]) {
@@ -79,7 +98,9 @@ int main(int argc, char* argv[]) {
                               << "  is not 1!" << std::endl;
                     continue;
                 }
-                removeOne(mxPair, point);
+                if (!removeOne(mxPair, point)) {
+                    continue;
+                }
                 states.push_back(mxPair);
                 pointsRemoved.push_back(point);
             } else if (words[0] == "5") {
@@ -105,15 +126,5 @@ int main(int argc, char* argv[]) {
             std::cout << std::endl;
             return 0;
         }
-        std::unique_ptr<char[], void(*)(void*)> rawLine{
-                readline("> "), free};
-        if (!rawLine) {
-            break;
-        }
-        if (rawLine[0] != 0) {
-            add_history(rawLine.get());
-        }
-        std::string line = rawLine.get();
-        boost::algorithm::split(words, line, boost::algorithm::is_space());
-    } while (std::cin.good());
+    } while (readLine(words));
 }
