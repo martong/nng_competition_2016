@@ -77,6 +77,27 @@ TEST(getAllNeigbors, first) {
     }
 }
 
+TEST(getAllNeigbors_not, first) {
+    {
+        Matrix<int> m{2, 2};
+        auto r = getAllNeigbors_not(m, {0, 0}, 0);
+        EXPECT_EQ(r.size(), 0);
+    }
+    {
+        Matrix<int> m{2, 2};
+        m[p00] = 1;
+        m[p10] = 2;
+        m[p01] = 1;
+        m[p11] = 1;
+
+        auto r = getAllNeigbors_not(m, {0, 0}, 1);
+        EXPECT_EQ(r.size(), 3);
+        EXPECT_THAT(
+            r, UnorderedElementsAre(Point{1, 0}, Point{0, -1}, Point{-1, 0}));
+
+    }
+}
+
 TEST(check, first) {
     Matrix<int> m{2, 2};
     m[p00] = 1;

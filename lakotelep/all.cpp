@@ -549,6 +549,17 @@ std::vector<Point> getAllNeigbors(const Matrix<int>& m, Point p, int with_value)
     }
     return result;
 }
+std::vector<Point> getAllNeigbors_not(const Matrix<int>& m, Point p, int without_value) {
+    std::vector<Point> result;
+    auto ns = getAllNeigbors(m, p);
+    for (const auto& n : ns) {
+        const int def = 0;
+        if (matrixAt(m, n, def) != without_value) {
+            result.push_back(n);
+        }
+    }
+    return result;
+}
 
 std::ostream& operator<<(std::ostream& os, const std::vector<Point>& ps) {
     for (const auto& p : ps) {
@@ -826,6 +837,47 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
     return true;
 }
 
+void get_1s_inside_loop(const Matrix<int>& m, const Point p,
+                        std::vector<Point>& H, std::vector<Point>& result) {
+    H.push_back(p);
+    auto ns = getAllNeigbors_not(m, p, 0);
+    for (auto n : ns) {
+
+        if (std::find(H.begin(), H.end(), n) != H.end()) {
+            continue;
+        }
+
+        auto sum0s = 0;
+
+        auto neigbours_of_n = getAllNeigbors(m, n);
+        for (auto x : neigbours_of_n) {
+            if (matrixAt(m, x, 0) == 0 ||
+                std::find(H.begin(), H.end(), x) != H.end()) {
+                ++sum0s;
+            }
+        }
+        if (sum0s == 5 - m[n]) {
+            if (m[p] == 1) {
+                result.push_back(p);
+            } else {
+                get_1s_inside_loop(m, n, H, result);
+            }
+        }
+    }
+};
+
+std::vector<Point> get_1s_inside(const Matrix<int>& m) {
+    std::vector<Point> result;
+    for (int i = 0; i < m.width(); ++i) {
+        for (int j = 0; j < m.height(); ++j) {
+            std::vector<Point> H;
+            Point p{j, i};
+            get_1s_inside_loop(m, p, H, result);
+        }
+    }
+    return result;
+}
+
 std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) {
     if (diag.size()) std::cout << "DIAG:\n" << diag;
 
@@ -887,22 +939,22 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
         }
     };
 
-    //st = get_1s_next_2s_at_edges();
-    //std::cout << "get_1s_next_2s_at_edges: " << st << std::endl;
-    //check_if_really_1(st);
+    st = get_1s_inside(m);
+    std::cout << "get_1s_inside: " << st << std::endl;
+    check_if_really_1(st);
 
-    while (m.size() != path.size()) {
+    //while (m.size() != path.size()) {
 
-        st = get_1s_next_elements_at_edges();
-        std::cout << "get_1s_next_elements_at_edges: " << st << std::endl;
-        check_if_really_1(st);
+        //st = get_1s_next_elements_at_edges();
+        //std::cout << "get_1s_next_elements_at_edges: " << st << std::endl;
+        //check_if_really_1(st);
 
-        assert(st.size() > 0);
-        flood(st, m, path);
-        //result = concat(result, path);
+        //assert(st.size() > 0);
+        //flood(st, m, path);
+        ////result = concat(result, path);
 
-        std::cout << m;
-    }
+        //std::cout << m;
+    //}
 
 
 
