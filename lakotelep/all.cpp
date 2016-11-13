@@ -531,6 +531,16 @@ std::vector<Point> getNeigbors(const Matrix<int>& m, Point p, int with_value) {
     }
     return result;
 }
+std::vector<Point> getNeigbors_not(const Matrix<int>& m, Point p, int without_value) {
+    std::vector<Point> result;
+    auto ns = getNeigbors(m, p);
+    for (const auto& n : ns) {
+        if (m[n] != without_value) {
+            result.push_back(n);
+        }
+    }
+    return result;
+}
 
 // Return all neigbors, those otuside the matrix too
 template <typename T>
@@ -850,11 +860,12 @@ std::vector<Point> get_1s_inside(const Matrix<int>& m) {
 }
 
 bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
+                           size_t size,
                            std::vector<Point> path,
                            std::vector<Point>& result) {
 
-    auto flooood = [](Matrix<int>&m, std::vector<Point>& path){
-        while (m.size() != path.size()) {
+    auto flooood = [size](Matrix<int>&m, std::vector<Point>& path){
+        while (size != path.size()) {
 
             auto st = get_1s_inside(m);
             // check_if_really_1(diag, st);
@@ -874,7 +885,7 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
         return flood(st, m, path) && flooood(m, path);
     };
 
-    if (path.size() == m.size()) {
+    if (path.size() == size) {
         result = path;
         return true;
     }
@@ -888,17 +899,17 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
     std::vector<Point> floodpath;
 
     if (!allFlood({p}, m, floodpath)) {
-        return solve_exp_flood_first(S, mc, path, result);
+        return solve_exp_flood_first(S, mc, size, path, result);
     }
-    if (!solve_exp_flood_first(S, m, concat(path, floodpath), result)) {
-        return solve_exp_flood_first(S, mc, path, result);
+    if (!solve_exp_flood_first(S, m, size, concat(path, floodpath), result)) {
+        return solve_exp_flood_first(S, mc, size, path, result);
     }
     return true;
 }
 
-bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
+bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m, size_t size,
                            std::vector<Point>& path) {
-    return solve_exp_flood_first(S, m, path, path);
+    return solve_exp_flood_first(S, m, size, path, path);
 }
 
 void check_if_really_1 (const Matrix<int>& diag, const std::vector<Point>& st){
@@ -934,6 +945,56 @@ std::vector<Point> get_group(const Matrix<int>& m, Point p, int value) {
     Matrix<bool> marked{m.width(), m.height()};
     std::vector<Point> result;
     get_group_impl(m, p, value, marked, result);
+    return result;
+}
+
+void get_island_impl(const Matrix<int>& m, Point p,
+               Matrix<bool>& marked,
+               Point& min, Point& max,
+               std::vector<Point>& result) {
+    marked[p] = true;
+    min.x = std::min(min.x, p.x);
+    min.y = std::min(min.y, p.y);
+    max.x = std::max(max.x, p.x);
+    max.y = std::max(max.y, p.y);
+    result.push_back(p);
+    for (auto n : getNeigbors_not(m, p, 0)) {
+        if(!marked[n]) get_island_impl(m, n, marked, min, max, result);
+    }
+}
+// Returns a group, the groups first two elements are neigbors.
+std::vector<Point> get_island(const Matrix<int>& m, Point p,
+                             Matrix<bool>& marked,
+                             Point& min, Point& max
+                             ) {
+    // Matrix<bool> marked{m.width(), m.height()};
+    std::vector<Point> result;
+    get_island_impl(m, p, marked, min, max, result);
+    return result;
+}
+
+struct IslandInfo {
+    Matrix<int> m;
+    size_t size;
+};
+
+std::vector<IslandInfo> gather_islands(const Matrix<int>& m) {
+    std::vector<IslandInfo> result;
+    Matrix<bool> inIsland(m.width(), m.height(), false);
+    for (int i = 0; i < m.height(); ++i) {
+        for (int j = 0; j < m.width(); ++j) {
+            Point p{j, i};
+            if (m[p] !=0 && !inIsland[p]) {
+                Point min, max;
+                auto island = get_island(m, p, inIsland, min, max);
+                Matrix<int> islandMatrix{m.width(), m.height(), 0};
+                for (auto p : island) {
+                    islandMatrix[p] = m[p];
+                }
+                result.push_back({std::move(islandMatrix), island.size()});
+            }
+        }
+    }
     return result;
 }
 
@@ -979,11 +1040,11 @@ std::vector<RankedPoints> gather_groups(const Matrix<int>& m) {
 std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) {
     if (diag.size()) std::cout << "DIAG:\n" << diag;
 
-    std::vector<Point> st;
     std::vector<Point> path;
     std::vector<Point> result;
 
     auto flood_ones_from_edges = [&]() {
+        std::vector<Point> st;
         // gather 1s at the edges
         for (int i = 0; i < m.width(); ++i) {
             {
@@ -1015,6 +1076,8 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
         // check_if_really_1(diag, st);
 
         if (st.size() == 0) {
+            //std::cerr << "FLOOD STOPPED:\n";
+            //std::cerr << m;
             break;
         }
 
@@ -1023,15 +1086,23 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
 
     if (m.size() != path.size()) {
 
-        auto groups = gather_groups(m);
-        std::sort(groups.begin(), groups.end(),
-                  [](const auto& l, const auto& r) { return l.rank < r.rank; });
-        st = to_vector(groups);
+        auto islands = gather_islands(m);
+
+        for (const auto& island : islands) {
+            //std::cerr << "Island:\n" << island.m;
+            auto groups = gather_groups(island.m);
+            std::sort(groups.begin(), groups.end(),
+                      [](const auto& l, const auto& r) { return l.rank < r.rank; });
+            auto st = to_vector(groups);
+            std::vector<Point> island_path;
+            auto res = solve_exp_flood_first(st, island.m, island.size, island_path);
+            path = concat(path, island_path);
+            //std::cerr << "solution:\n" << island_path;
+        }
 
         //std::cerr << "BEFORE SEARCH\n";
         //std::cerr << st;
         //std::cerr << m;
-        auto res = solve_exp_flood_first(st, m, path);
         //std::cerr << "solve returns: " << res << "\n";
     }
 
