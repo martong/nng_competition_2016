@@ -6,6 +6,7 @@
 
 #include <vector>
 
-void solveManually(const GameInfo& gameInfo);
+void solveManually(const GameInfo& gameInfo,
+        const std::vector<Command>& commands);
 
 #endif // CREEP_MANUALSOLVER_HPP

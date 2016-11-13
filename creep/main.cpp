@@ -58,8 +58,21 @@ void generate(const GameInfo& gameInfo, const Options& options) {
     }
 }
 
-void manual(const GameInfo& gameInfo, const Options& /*options*/) {
-    solveManually(gameInfo);
+void manual(const GameInfo& gameInfo, const Options& options) {
+    std::vector<Command> commands;
+    if (!options.solutionFileName.empty()) {
+        std::ifstream fs{options.solutionFileName};
+        int numberOfCommands;
+        fs >> numberOfCommands;
+        std::cerr << "Number of commands: " << numberOfCommands << "\n";
+        for (int i = 0; i < numberOfCommands; ++i) {
+            Command command;
+            fs >> command.time >> command.type >> command.id >>
+                    command.position.x >> command.position.y;
+            commands.push_back(command);
+        }
+    }
+    solveManually(gameInfo, commands);
 }
 
 int main(int argc, const char* argv[]) {

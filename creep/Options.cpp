@@ -74,9 +74,14 @@ Options parseOptions(int argc, const char* argv[]) {
     po::options_description generateOptions{
             "Options for generating solution from neural network"};
     generateOptions.add_options()
-            ("ai-file-name,f",
-             defaultValue(result.aiFileName),
+            ("ai-file-name,f", defaultValue(result.aiFileName),
              "The file where the neural network is stored.")
+            ;
+    po::options_description manualOptions{
+            "Options for manual solving"};
+    generateOptions.add_options()
+            ("solution-file-name", defaultValue(result.solutionFileName),
+             "The solution to load.")
             ;
     po::options_description options;
     options.add(commonOptions);

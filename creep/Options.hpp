@@ -8,6 +8,7 @@
 struct Options {
     std::string type;
     std::string inputFileName;
+    std::string solutionFileName;
     std::string aiFileName;
     std::size_t numThreads = 1;
     LearningParameters learningParameters;

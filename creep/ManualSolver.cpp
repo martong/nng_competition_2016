@@ -26,8 +26,13 @@ namespace {
 
 class ManualSolver {
 public:
-    ManualSolver(const GameInfo& gameInfo) :
+    ManualSolver(const GameInfo& gameInfo,
+            const std::vector<Command>& initialCommands) :
             history{Game{gameInfo}} {
+        for (const Command& command : initialCommands) {
+            commands.push_back(CommandDescriptor{++commandId, command});
+        }
+        sortCommands();
         history.back().print(std::cout);
     }
 
@@ -47,6 +52,13 @@ private:
         assert(newGame.getStatus().getTime() ==
                 static_cast<int>(history.size()));
         history.push_back(newGame);
+    }
+
+    void sortCommands() {
+        std::sort(commands.begin(), commands.end(),
+                [](const CommandDescriptor& lhs, const CommandDescriptor& rhs) {
+                    return lhs.command.time < rhs.command.time;
+                });
     }
 
     void gotoTime(const std::vector<std::string> args) {
@@ -146,10 +158,7 @@ private:
         Game& game = history.back();
         commands.push_back(CommandDescriptor{++commandId,
                 Command{game.getStatus().getTime(), type, id, p}});
-        std::sort(commands.begin(), commands.end(),
-                [](const CommandDescriptor& lhs, const CommandDescriptor& rhs) {
-                    return lhs.command.time < rhs.command.time;
-                });
+        sortCommands();
     }
 
     void dumpCommands(const std::vector<std::string>& args) {
@@ -213,8 +222,9 @@ private:
 
 } // unnamed namespace
 
-void solveManually(const GameInfo& gameInfo) {
-    ManualSolver manualSolver{gameInfo};
+void solveManually(const GameInfo& gameInfo,
+        const std::vector<Command>& commands) {
+    ManualSolver manualSolver{gameInfo, commands};
     std::string line;
     while (std::cin.good()) {
         try {
