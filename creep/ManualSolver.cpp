@@ -136,12 +136,19 @@ private:
     }
 
     void showCommands(const std::vector<std::string>& /*args**/) {
+        int currentTime = history.back().getStatus().getTime();
         for (const CommandDescriptor& command : commands) {
+            char symbol = ' ';
+            if (command.command.time < currentTime) {
+                symbol = '*';
+            } else if (command.command.time == currentTime) {
+                symbol = '!';
+            }
             std::cout << "#" << command.id <<
                     " time=" << command.command.time << " type=" <<
                     (command.command.type == CommandType::PlaceTumorFromQueen ?
                             "queen" : "tumor") <<
-                    " position=" << command.command.position << "\n";
+                    " position=" << command.command.position << symbol << "\n";
         }
     }
 
@@ -181,7 +188,7 @@ private:
         for (const CommandDescriptor& command : commands) {
             stream << command.command.time << " " <<
                     command.command.type << " " <<
-                    command.command.id << " " << 
+                    command.command.id << " " <<
                     command.command.position.x << " " <<
                     command.command.position.y << "\n";
         }
