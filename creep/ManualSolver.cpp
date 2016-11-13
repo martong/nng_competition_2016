@@ -10,10 +10,14 @@
 #include <boost/range/algorithm_ext/erase.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <readline/history.h>
+#include <readline/readline.h>
+
 #include <algorithm>
 #include <assert.h>
 #include <functional>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -31,15 +35,12 @@ public:
         userCommands.at(args[0])(args);
     }
 
-    const std::vector<Command>& getCommands() const {
-        return commands;
-    }
 private:
     void tick() {
         Game newGame{history.back()};
-        for (const Command& command : commands) {
-            if (command.time == newGame.getStatus().getTime()) {
-                newGame.addCommand(command);
+        for (const CommandDescriptor& command : commands) {
+            if (command.command.time == newGame.getStatus().getTime()) {
+                newGame.addCommand(command.command);
             }
         }
         newGame.tick();
@@ -97,18 +98,38 @@ private:
 
     void clearCommands(const std::vector<std::string> /*args*/) {
         boost::remove_erase_if(commands,
-                [this](const Command& command) {
-                    return command.time >= history.back().getStatus().getTime();
+                [this](const CommandDescriptor& command) {
+                    return command.command.time >=
+                            history.back().getStatus().getTime();
                 });
     }
 
+    void deleteCommand(const std::vector<std::string>& args) {
+        for (std::size_t i = 1; i < args.size(); ++i) {
+            int id = boost::lexical_cast<int>(args[i]);
+            auto it = std::find_if(commands.begin(), commands.end(),
+                    [id](const CommandDescriptor& command) {
+                        return command.id == id;
+                    });
+            if (it == commands.end()) {
+                // Only basic exception safety here!
+                throw std::logic_error{"No such command."};
+            }
+            if (it->command.time < history.back().getStatus().getTime()) {
+                throw std::logic_error{
+                        "Cannot delete already executed command"};
+            }
+            commands.erase(it);
+        }
+    }
+
     void showCommands(const std::vector<std::string>& /*args**/) {
-        for (const Command& command : commands) {
-            std::cout << "time=" << command.time <<
-                    " type=" <<
-                    (command.type == CommandType::PlaceTumorFromQueen ?
+        for (const CommandDescriptor& command : commands) {
+            std::cout << "#" << command.id <<
+                    " time=" << command.command.time << " type=" <<
+                    (command.command.type == CommandType::PlaceTumorFromQueen ?
                             "queen" : "tumor") <<
-                    " position=" << command.position << "\n";
+                    " position=" << command.command.position << "\n";
         }
     }
 
@@ -123,10 +144,11 @@ private:
         p.x = boost::lexical_cast<int>(args.at(2));
         p.y = boost::lexical_cast<int>(args.at(3));
         Game& game = history.back();
-        commands.push_back({game.getStatus().getTime(), type, id, p});
+        commands.push_back(CommandDescriptor{++commandId,
+                Command{game.getStatus().getTime(), type, id, p}});
         std::sort(commands.begin(), commands.end(),
-                [](const Command& lhs, const Command& rhs) {
-                    return lhs.time < rhs.time;
+                [](const CommandDescriptor& lhs, const CommandDescriptor& rhs) {
+                    return lhs.command.time < rhs.command.time;
                 });
     }
 
@@ -140,15 +162,23 @@ private:
     }
 
     void dumpCommandsTo(std::ostream& stream) {
-    for (const Command& command : commands) {
-        stream << command.time << " " << command.type << " " <<
-                command.id << " " << command.position.x << " " <<
-                command.position.y << "\n";
+    for (const CommandDescriptor& command : commands) {
+        stream << command.command.time << " " << command.command.type << " " <<
+                command.command.id << " " << command.command.position.x << " " <<
+                command.command.position.y << "\n";
     }
     }
 
     util::PrefixMap<std::function<
             void(const std::vector<std::string>&)>> userCommands{
+            {"clear", std::bind(&ManualSolver::clearCommands,
+                    this, std::placeholders::_1)},
+            {"commands", std::bind(&ManualSolver::showCommands,
+                    this, std::placeholders::_1)},
+            {"delete", std::bind(&ManualSolver::deleteCommand,
+                    this, std::placeholders::_1)},
+            {"dump", std::bind(&ManualSolver::dumpCommands,
+                    this, std::placeholders::_1)},
             {"goto", std::bind(&ManualSolver::gotoTime,
                     this, std::placeholders::_1)},
             {"tumor", std::bind(&ManualSolver::addCommand,
@@ -159,18 +189,18 @@ private:
                     std::placeholders::_1)},
             {"show", std::bind(&ManualSolver::showCreep,
                     this, std::placeholders::_1)},
-            {"clear", std::bind(&ManualSolver::clearCommands,
-                    this, std::placeholders::_1)},
-            {"commands", std::bind(&ManualSolver::showCommands,
-                    this, std::placeholders::_1)},
-            {"dump", std::bind(&ManualSolver::dumpCommands,
-                    this, std::placeholders::_1)},
             {"next", std::bind(&ManualSolver::nextTime,
                     this, std::placeholders::_1)},
     };
 
+    struct CommandDescriptor {
+        int id;
+        Command command;
+    };
+
+    int commandId = 0;
     std::vector<Game> history;
-    std::vector<Command> commands;
+    std::vector<CommandDescriptor> commands;
 };
 
 } // unnamed namespace
@@ -180,8 +210,17 @@ void solveManually(const GameInfo& gameInfo) {
     std::string line;
     while (std::cin.good()) {
         try {
-            std::cerr << "> ";
-            std::getline(std::cin, line);
+            {
+                std::unique_ptr<char[], void(*)(void*)> rawLine{
+                        readline("> "), free};
+                if (!rawLine) {
+                    break;
+                }
+                if (rawLine[0] != 0) {
+                    add_history(rawLine.get());
+                }
+                line = rawLine.get();
+            }
             if (line.empty()) {
                 continue;
             }

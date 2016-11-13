@@ -5,7 +5,7 @@ include $(COMPILE_TUP)
 : creep.cc |> !cxx |> creep.oo
 
 INCLUDE_DIRS += -I$(UTIL_DIR) -I$(CPP_UTIL_DIR)/include
-LIBS += -lboost_program_options -lpthread -lboost_system -lboost_thread -lboost_serialization -lboost_filesystem
+LIBS += -lboost_program_options -lpthread -lboost_system -lboost_thread -lboost_serialization -lboost_filesystem -lreadline
 
 : foreach *.cpp |> !cxx |>
 
