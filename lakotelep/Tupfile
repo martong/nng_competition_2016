@@ -5,8 +5,12 @@ include $(COMPILE_TUP)
 INCLUDE_DIRS += -I$(UTIL_DIR)
 #LIBS += -lgtest -lgmock
 
-: foreach *.cpp |> !cxx |>
+: interactive.cpp |> !cxx |>
+: semi_interactive.cpp |> !cxx |>
+: main.cpp |> !cxx |>
 
 include $(LINK_TUP)
 
 : main.o |> !linker |> lakotelep
+: semi_interactive.o |> !linker |> semi_interactive
+: interactive.o |> !linker |> interactive
