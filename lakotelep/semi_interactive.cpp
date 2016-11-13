@@ -335,7 +335,7 @@ int main(int argc, char* argv[]) {
     states.push_back(mxPair);
     std::vector<Point> pointsRemoved;
     do {
-        if (words.empty()) {
+        if (!words.empty()) {
             if (words[0] == "q") {
                 return 0;
             } else if (words[0] == "b" && states.size() > 0) {
