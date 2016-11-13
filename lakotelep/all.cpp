@@ -844,49 +844,6 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
     flood_ones_from_edges();
     std::cout << m;
 
-    auto get_1s_next_2s_at_edges = [&m]() {
-        std::vector<Point> st;
-        for (int i = 0; i < m.width(); ++i) {
-            for (int j = 0; j < m.height(); ++j) {
-
-                Point p{j, i};
-
-                if (m[p] == 2) {
-                    if (getAllNeigbors(m, p, 0).size() == 3) {
-                        auto n1 = getAllNeigbors(m, p, 1);
-                        if (n1.size() == 1) {
-                            st.push_back(n1[0]);
-                        }
-                    }
-                }
-
-            }
-        }
-        return st;
-    };
-
-    auto get_1s_next_3s_at_edges = [&m]() {
-        std::vector<Point> st;
-        for (int i = 0; i < m.width(); ++i) {
-            for (int j = 0; j < m.height(); ++j) {
-
-                Point p{j, i};
-
-                if (m[p] == 3) {
-                    if (getAllNeigbors(m, p, 0).size() == 2) {
-                        auto n1 = getAllNeigbors(m, p, 1);
-                        if (n1.size() == 2) {
-                            st.push_back(n1[0]);
-                            st.push_back(n1[1]);
-                        }
-                    }
-                }
-
-            }
-        }
-        return st;
-    };
-
     auto get_1s_next_elements_at_edges = [&m]() {
         std::vector<Point> st;
         for (int i = 0; i < m.width(); ++i) {
