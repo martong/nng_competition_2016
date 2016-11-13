@@ -921,10 +921,58 @@ void get_group_impl(const Matrix<int>& m, Point p, int value,
 }
 
 // Returns a group, the groups first two elements are neigbors.
+std::vector<Point> get_group(const Matrix<int>& m, Point p, int value,
+                             Matrix<bool>& marked) {
+    // Matrix<bool> marked{m.width(), m.height()};
+    std::vector<Point> result;
+    get_group_impl(m, p, value, marked, result);
+    return result;
+}
+
+// Returns a group, the groups first two elements are neigbors.
 std::vector<Point> get_group(const Matrix<int>& m, Point p, int value) {
     Matrix<bool> marked{m.width(), m.height()};
     std::vector<Point> result;
     get_group_impl(m, p, value, marked, result);
+    return result;
+}
+
+struct RankedPoints {
+    Point p;
+    Point neighbor;
+    int rank;
+    RankedPoints(Point p, int rank) : p(p), neighbor({-1, -1}), rank(rank) {}
+    RankedPoints(Point p, Point neighbor, int rank)
+        : p(p), neighbor(neighbor), rank(rank) {}
+};
+
+std::vector<Point> to_vector(const std::vector<RankedPoints>& ps) {
+    std::vector<Point> result;
+    for (const auto x : ps) {
+        result.push_back(x.p);
+        if (x.neighbor != Point{-1, -1}) {
+            result.push_back(x.neighbor);
+        }
+    }
+    return result;
+}
+
+std::vector<RankedPoints> gather_groups(const Matrix<int>& m) {
+    std::vector<RankedPoints> result;
+    Matrix<bool> inGroup(m.width(), m.height(), false);
+    for (int i = 0; i < m.height(); ++i) {
+        for (int j = 0; j < m.width(); ++j) {
+            Point p{j, i};
+            if (m[p] == 1 && !inGroup[p]) {
+                auto gr = get_group(m, p, 1, inGroup);
+                if (gr.size() >= 2) {
+                    result.emplace_back(gr[0], gr[1], gr.size()); //Add the nbor
+                } else {
+                    result.emplace_back(gr[0], gr.size());
+                }
+            }
+        }
+    }
     return result;
 }
 
@@ -974,13 +1022,11 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
     }
 
     if (m.size() != path.size()) {
-        st.clear();
-        for (int i = 0; i < m.height(); ++i) {
-            for (int j = 0; j < m.width(); ++j) {
-                Point p{j, i};
-                if (m[p] == 1) st.push_back(p);
-            }
-        }
+
+        auto groups = gather_groups(m);
+        std::sort(groups.begin(), groups.end(),
+                  [](const auto& l, const auto& r) { return l.rank < r.rank; });
+        st = to_vector(groups);
 
         std::cerr << "BEFORE SEARCH\n";
         std::cerr << st;
