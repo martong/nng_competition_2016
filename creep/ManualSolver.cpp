@@ -149,6 +149,7 @@ private:
                     " time=" << command.command.time << " type=" <<
                     (command.command.type == CommandType::PlaceTumorFromQueen ?
                             "queen" : "tumor") <<
+                    " parent=" << command.command.id <<
                     " position=" << command.command.position << symbol << "\n";
         }
     }
