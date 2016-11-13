@@ -838,41 +838,45 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
 }
 
 void get_1s_inside_loop(const Matrix<int>& m, const Point p,
-                        std::vector<Point>& H, std::vector<Point>& result) {
+                        std::vector<Point> H, std::vector<Point>& result/*,
+                        int depth*/) {
     H.push_back(p);
-    auto ns = getAllNeigbors_not(m, p, 0);
+    auto sum0s = 0;
+    auto neigbours = getAllNeigbors(m, p);
+    for (auto x : neigbours) {
+        if (matrixAt(m, x, 0) == 0 ||
+            std::find(H.begin(), H.end(), x) != H.end()) {
+            ++sum0s;
+        }
+    }
+    if (sum0s != 5 - m[p]) {
+        return;
+    }
+    //printDepth(depth);
+    //std::cerr << "Considering: " << p << " [" << m[p] << "]. " << "sum=" << sum0s << "\n";
+    auto ns = getNeigbors(m, p);
     for (auto n : ns) {
-
-        if (std::find(H.begin(), H.end(), n) != H.end()) {
+        if (m[n] == 0 || std::find(H.begin(), H.end(), n) != H.end()) {
             continue;
         }
 
-        auto sum0s = 0;
-
-        auto neigbours_of_n = getAllNeigbors(m, n);
-        for (auto x : neigbours_of_n) {
-            if (matrixAt(m, x, 0) == 0 ||
-                std::find(H.begin(), H.end(), x) != H.end()) {
-                ++sum0s;
-            }
-        }
-        if (sum0s == 5 - m[n]) {
-            if (m[p] == 1) {
-                result.push_back(p);
-            } else {
-                get_1s_inside_loop(m, n, H, result);
-            }
+        if (m[n] == 1) {
+            //printDepth(depth);
+            //std::cerr << "Adding: " << n << "\n";
+            result.push_back(n);
+        } else {
+            get_1s_inside_loop(m, n, H, result/*, depth + 1*/);
         }
     }
 };
 
 std::vector<Point> get_1s_inside(const Matrix<int>& m) {
     std::vector<Point> result;
-    for (int i = 0; i < m.width(); ++i) {
-        for (int j = 0; j < m.height(); ++j) {
+    for (int i = 0; i < m.height(); ++i) {
+        for (int j = 0; j < m.width(); ++j) {
             std::vector<Point> H;
             Point p{j, i};
-            get_1s_inside_loop(m, p, H, result);
+            get_1s_inside_loop(m, p, H, result/*, 0*/);
         }
     }
     return result;
@@ -914,8 +918,8 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
 
     auto get_1s_next_elements_at_edges = [&m]() {
         std::vector<Point> st;
-        for (int i = 0; i < m.width(); ++i) {
-            for (int j = 0; j < m.height(); ++j) {
+        for (int i = 0; i < m.height(); ++i) {
+            for (int j = 0; j < m.width(); ++j) {
 
                 Point p{j, i};
 
@@ -960,8 +964,8 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
 
     //get the remaining ones from the middle
     //st.clear();
-    //for (int i = 1; i < m.width() - 1; ++i) {
-        //for (int j = 1; j < m.height() - 1; ++j) {
+    //for (int i = 1; i < m.height() - 1; ++i) {
+        //for (int j = 1; j < m.width() - 1; ++j) {
             //Point p{j, i};
             //if (m[p] == 1) st.push_back(p);
         //}
@@ -969,8 +973,8 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
 
     //st.clear();
     // get all ones
-    //for (int i = 0; i < m.width(); ++i) {
-        //for (int j = 0; j < m.height(); ++j) {
+    //for (int i = 0; i < m.height(); ++i) {
+        //for (int j = 0; j < m.width(); ++j) {
             //Point p{j, i};
             //if (m[p] == 1) st.push_back(p);
         //}
