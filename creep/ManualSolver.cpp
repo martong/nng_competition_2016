@@ -177,11 +177,14 @@ private:
     }
 
     void dumpCommandsTo(std::ostream& stream) {
-    for (const CommandDescriptor& command : commands) {
-        stream << command.command.time << " " << command.command.type << " " <<
-                command.command.id << " " << command.command.position.x << " " <<
-                command.command.position.y << "\n";
-    }
+        stream << commands.size() << "\n";
+        for (const CommandDescriptor& command : commands) {
+            stream << command.command.time << " " <<
+                    command.command.type << " " <<
+                    command.command.id << " " << 
+                    command.command.position.x << " " <<
+                    command.command.position.y << "\n";
+        }
     }
 
     util::PrefixMap<std::function<
