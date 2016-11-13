@@ -86,9 +86,9 @@ std::vector<std::size_t> generateChain(const std::vector<std::string>& words) {
     //        });
     //std::size_t matchSize = maxElem->size();
     //std::cerr << "hardcode match size!!: " << matchSize << std::endl;
-    std::vector<std::size_t> matchSizes{16, 15, 14, 13, 11, 10, 9, 8};
+    std::vector<std::size_t> matchSizes{16, 15, 14, 13, 12};
     std::random_shuffle(matchSizes.begin(), matchSizes.end());
-    for (std::size_t i = 7; i > 0; --i) {
+    for (std::size_t i = 11; i > 0; --i) {
         matchSizes.push_back(i);
     }
     std::size_t sizeIndex = 0;
