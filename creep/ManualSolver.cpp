@@ -14,6 +14,7 @@
 #include <readline/readline.h>
 
 #include <algorithm>
+#include <cmath>
 #include <assert.h>
 #include <functional>
 #include <fstream>
@@ -177,6 +178,16 @@ private:
         }
     }
 
+    void calculateDistance(const std::vector<std::string>& args) {
+        Point from;
+        from.x = boost::lexical_cast<int>(args.at(1));
+        from.y = boost::lexical_cast<int>(args.at(2));
+        Point to;
+        to.x = boost::lexical_cast<int>(args.at(3));
+        to.y = boost::lexical_cast<int>(args.at(4));
+        std::cout << "Distance: " << std::sqrt(distanceSquare(from, to)) << "\n";
+    }
+
     void help(const std::vector<std::string>& /*args*/) {
         for (const auto& element : userCommands) {
             std::cout << element.first << "\n";
@@ -201,6 +212,8 @@ private:
             {"commands", std::bind(&ManualSolver::showCommands,
                     this, std::placeholders::_1)},
             {"delete", std::bind(&ManualSolver::deleteCommand,
+                    this, std::placeholders::_1)},
+            {"distance", std::bind(&ManualSolver::calculateDistance,
                     this, std::placeholders::_1)},
             {"dump", std::bind(&ManualSolver::dumpCommands,
                     this, std::placeholders::_1)},
