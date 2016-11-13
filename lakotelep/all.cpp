@@ -793,6 +793,7 @@ bool solve_exp_flood_last(std::vector<Point> S, Matrix<int> m,
     return false;
 }
 
+
 void printDepth(int depth) {
     for (int i = 0; i < depth; ++i) {
         std::cerr << " ";
@@ -801,41 +802,7 @@ void printDepth(int depth) {
 
 int solve_exp_called = 0;
 
-bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
-                           std::vector<Point> path,
-                           std::vector<Point>& result) {
-    // std::cout << S;
-    // std::cout << m;
-    ++solve_exp_called;
-    if (path.size() == m.size()) {
-        result = path;
-        return true;
-    }
-    if (S.empty()) return false;
 
-    auto p = S.back();
-    S.pop_back();
-    //printDepth(depth);
-    //std::cerr << "Trying: " << p << "\n";
-
-    auto mc = m;
-
-    std::vector<Point> floodpath;
-
-    if (!flood({p}, m, floodpath)) {
-        //printDepth(depth);
-        //std::cerr << p << ": flood failed, assuming 5\n";
-        return solve_exp_flood_first(S, mc, path, result);
-    }
-    //printDepth(depth);
-    //std::cerr << p << ": assuming 1\n";
-    if (!solve_exp_flood_first(S, m, concat(path, floodpath), result)) {
-        //printDepth(depth);
-        //std::cerr << p << ": assuming 5\n";
-        return solve_exp_flood_first(S, mc, path, result);
-    }
-    return true;
-}
 
 void get_1s_inside_loop(const Matrix<int>& m, const Point p,
                         std::vector<Point> H, std::vector<Point>& result/*,
@@ -882,6 +849,67 @@ std::vector<Point> get_1s_inside(const Matrix<int>& m) {
     return result;
 }
 
+bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
+                           std::vector<Point> path,
+                           std::vector<Point>& result) {
+
+    auto flooood = [](Matrix<int>&m, std::vector<Point>& path){
+        while (m.size() != path.size()) {
+
+            auto st = get_1s_inside(m);
+            // check_if_really_1(diag, st);
+
+            if (st.size() == 0) {
+                break;
+            }
+
+            if (!flood(st, m, path)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    auto allFlood = [flooood](std::vector<Point> st, Matrix<int>&m, std::vector<Point>& path) {
+        return flood(st, m, path) && flooood(m, path);
+    };
+
+    if (path.size() == m.size()) {
+        result = path;
+        return true;
+    }
+    if (S.empty()) return false;
+
+    auto p = S.back();
+    S.pop_back();
+
+    auto mc = m;
+
+    std::vector<Point> floodpath;
+
+    if (!allFlood({p}, m, floodpath)) {
+        return solve_exp_flood_first(S, mc, path, result);
+    }
+    if (!solve_exp_flood_first(S, m, concat(path, floodpath), result)) {
+        return solve_exp_flood_first(S, mc, path, result);
+    }
+    return true;
+}
+
+bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
+                           std::vector<Point>& path) {
+    return solve_exp_flood_first(S, m, path, path);
+}
+
+void check_if_really_1 (const Matrix<int>& diag, const std::vector<Point>& st){
+    for (const auto& p : st) {
+        if (diag.size() && diag[p] == 5) {
+            std::cout << "ERROR1vs5 at " << p << std::endl;
+            assert(false);
+        }
+    }
+}
+
 std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) {
     if (diag.size()) std::cout << "DIAG:\n" << diag;
 
@@ -914,78 +942,37 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
         flood(st, m, path);
     };
     flood_ones_from_edges();
-    std::cout << m;
-
-    auto get_1s_next_elements_at_edges = [&m]() {
-        std::vector<Point> st;
-        for (int i = 0; i < m.height(); ++i) {
-            for (int j = 0; j < m.width(); ++j) {
-
-                Point p{j, i};
-
-                if (5 - m[p] == getAllNeigbors(m, p, 0).size()) {
-                    auto ns1 = getAllNeigbors(m, p, 1);
-                    // TODO optimize:
-                    st = concat(st, ns1);
-                }
-
-            }
-        }
-        return st;
-    };
-
-    auto check_if_really_1 = [&](const auto& st){
-        for (const auto& p : st) {
-            if (diag.size() && diag[p] == 5) {
-                std::cout << "ERROR1vs5 at " << p << std::endl;
-                assert(false);
-            }
-        }
-    };
-
-    //st = get_1s_inside(m);
-    //std::cout << "get_1s_inside: " << st << std::endl;
-    //check_if_really_1(st);
 
     while (m.size() != path.size()) {
 
-        st = get_1s_inside(m);
-        check_if_really_1(st);
+        auto st = get_1s_inside(m);
+        // check_if_really_1(diag, st);
 
-        assert(st.size() > 0);
+        if (st.size() == 0) {
+            break;
+        }
+
         flood(st, m, path);
-        //result = concat(result, path);
-
-        std::cout << m;
-
     }
 
+    if (m.size() != path.size()) {
+        st.clear();
+        for (int i = 0; i < m.height(); ++i) {
+            for (int j = 0; j < m.width(); ++j) {
+                Point p{j, i};
+                if (m[p] == 1) st.push_back(p);
+            }
+        }
 
-    //get the remaining ones from the middle
-    //st.clear();
-    //for (int i = 1; i < m.height() - 1; ++i) {
-        //for (int j = 1; j < m.width() - 1; ++j) {
-            //Point p{j, i};
-            //if (m[p] == 1) st.push_back(p);
-        //}
-    //}
-
-    //st.clear();
-    // get all ones
-    //for (int i = 0; i < m.height(); ++i) {
-        //for (int j = 0; j < m.width(); ++j) {
-            //Point p{j, i};
-            //if (m[p] == 1) st.push_back(p);
-        //}
-    //}
-
-    //solve_exp_flood_first(st, m, path, result);
+        std::cerr << "BEFORE SEARCH\n";
+        std::cerr << st;
+        std::cerr << m;
+        auto res = solve_exp_flood_first(st, m, path);
+        std::cerr << "solve returns: " << res << "\n";
+    }
 
     std::reverse(path.begin(), path.end());
     return path;
-
-    //std::reverse(result.begin(), result.end());
-    //return result;
 }
 
 void CalculateBuildOrder(const std::vector<std::vector<int>>& buildings, std::vector<std::pair<size_t, size_t>>& solution) {
