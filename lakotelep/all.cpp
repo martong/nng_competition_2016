@@ -746,8 +746,7 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
             }
         }
 
-        auto fallback = !flood(nst, m, path);
-        if (fallback) { return false; }
+        if (!flood(nst, m, path)) { return false; }
     }
     return true;
 }
@@ -783,11 +782,20 @@ bool solve_exp_flood_last(std::vector<Point> S, Matrix<int> m,
     return false;
 }
 
+void printDepth(int depth) {
+    for (int i = 0; i < depth; ++i) {
+        std::cerr << " ";
+    }
+}
+
+int solve_exp_called = 0;
+
 bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
                            std::vector<Point> path,
                            std::vector<Point>& result) {
     // std::cout << S;
     // std::cout << m;
+    ++solve_exp_called;
     if (path.size() == m.size()) {
         result = path;
         return true;
@@ -796,15 +804,23 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
 
     auto p = S.back();
     S.pop_back();
+    //printDepth(depth);
+    //std::cerr << "Trying: " << p << "\n";
 
     auto mc = m;
 
     std::vector<Point> floodpath;
 
     if (!flood({p}, m, floodpath)) {
+        //printDepth(depth);
+        //std::cerr << p << ": flood failed, assuming 5\n";
         return solve_exp_flood_first(S, mc, path, result);
     }
+    //printDepth(depth);
+    //std::cerr << p << ": assuming 1\n";
     if (!solve_exp_flood_first(S, m, concat(path, floodpath), result)) {
+        //printDepth(depth);
+        //std::cerr << p << ": assuming 5\n";
         return solve_exp_flood_first(S, mc, path, result);
     }
     return true;
