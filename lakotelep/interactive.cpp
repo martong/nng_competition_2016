@@ -13,7 +13,9 @@ void removeOne(std::pair<Matrix<int>, Matrix<int>>& mxPair, const Point& point) 
     for (const auto& neighbour : neighbours) {
         if (mxPair.first[neighbour] > 0) {
             --mxPair.first[neighbour];
-            --mxPair.second[neighbour];
+            if (--mxPair.second[neighbour] == 0) {
+                mxPair.second[neighbour] = 4;
+            }
         }
     }
 }
