@@ -943,23 +943,22 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
         }
     };
 
-    st = get_1s_inside(m);
-    std::cout << "get_1s_inside: " << st << std::endl;
-    check_if_really_1(st);
+    //st = get_1s_inside(m);
+    //std::cout << "get_1s_inside: " << st << std::endl;
+    //check_if_really_1(st);
 
-    //while (m.size() != path.size()) {
+    while (m.size() != path.size()) {
 
-        //st = get_1s_next_elements_at_edges();
-        //std::cout << "get_1s_next_elements_at_edges: " << st << std::endl;
-        //check_if_really_1(st);
+        st = get_1s_inside(m);
+        check_if_really_1(st);
 
-        //assert(st.size() > 0);
-        //flood(st, m, path);
-        ////result = concat(result, path);
+        assert(st.size() > 0);
+        flood(st, m, path);
+        //result = concat(result, path);
 
-        //std::cout << m;
-    //}
+        std::cout << m;
 
+    }
 
 
     //get the remaining ones from the middle
