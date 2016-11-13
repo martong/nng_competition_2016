@@ -1028,11 +1028,11 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
                   [](const auto& l, const auto& r) { return l.rank < r.rank; });
         st = to_vector(groups);
 
-        std::cerr << "BEFORE SEARCH\n";
-        std::cerr << st;
-        std::cerr << m;
+        //std::cerr << "BEFORE SEARCH\n";
+        //std::cerr << st;
+        //std::cerr << m;
         auto res = solve_exp_flood_first(st, m, path);
-        std::cerr << "solve returns: " << res << "\n";
+        //std::cerr << "solve returns: " << res << "\n";
     }
 
     std::reverse(path.begin(), path.end());
