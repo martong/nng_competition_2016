@@ -161,6 +161,12 @@ private:
         }
     }
 
+    void help(const std::vector<std::string>& /*args*/) {
+        for (const auto& element : userCommands) {
+            std::cout << element.first << "\n";
+        }
+    }
+
     void dumpCommandsTo(std::ostream& stream) {
     for (const CommandDescriptor& command : commands) {
         stream << command.command.time << " " << command.command.type << " " <<
@@ -180,6 +186,8 @@ private:
             {"dump", std::bind(&ManualSolver::dumpCommands,
                     this, std::placeholders::_1)},
             {"goto", std::bind(&ManualSolver::gotoTime,
+                    this, std::placeholders::_1)},
+            {"help", std::bind(&ManualSolver::help,
                     this, std::placeholders::_1)},
             {"tumor", std::bind(&ManualSolver::addCommand,
                     this, CommandType::PlaceTumorFromTumor,
