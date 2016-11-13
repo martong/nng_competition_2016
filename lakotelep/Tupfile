@@ -3,7 +3,7 @@ include_rules
 include $(COMPILE_TUP)
 
 INCLUDE_DIRS += -I$(UTIL_DIR)
-#LIBS += -lgtest -lgmock
+LIBS += -lreadline
 
 : interactive.cpp |> !cxx |>
 : semi_interactive.cpp |> !cxx |>
