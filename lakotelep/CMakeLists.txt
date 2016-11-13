@@ -15,7 +15,7 @@ endif()
 include_directories(.)
 include_directories(${CMAKE_SOURCE_DIR}/util)
 
-add_executable(generator generator.cpp ${CMAKE_SOURCE_DIR}/util/Point.cpp)
+#add_executable(generator generator.cpp ${CMAKE_SOURCE_DIR}/util/Point.cpp)
 
 add_executable(lakotelep_test test.cpp)
 target_link_libraries(lakotelep_test gtest gmock_main)

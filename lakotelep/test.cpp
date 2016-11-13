@@ -9,7 +9,7 @@
 
 using namespace ::testing;
 
-TEST(Neighbor, first) {
+TEST(getNeighbors, first) {
     {
         Matrix<int> m{2, 2};
         auto r = getNeigbors(m, {0, 0});
@@ -29,6 +29,51 @@ TEST(Neighbor, first) {
         EXPECT_EQ(r.size(), 4);
         EXPECT_THAT(r, UnorderedElementsAre(Point{2, 1}, Point{1, 2},
                                             Point{0, 1}, Point{1, 0}));
+    }
+}
+
+TEST(getAllNeigbors, first) {
+    {
+        Matrix<int> m{2, 2};
+        auto r = getAllNeigbors(m, {0, 0});
+        EXPECT_EQ(r.size(), 4);
+    }
+    {
+        Matrix<int> m{2, 2};
+        m[p00] = 1;
+        m[p10] = 1;
+        m[p01] = 1;
+        m[p11] = 1;
+
+        auto r = getAllNeigbors(m, {0, 0}, 1);
+        EXPECT_EQ(r.size(), 2);
+        EXPECT_THAT(
+            r, UnorderedElementsAre(Point{0, 1}, Point{1, 0}));
+
+    }
+    {
+        Matrix<int> m{2, 2};
+        m[p00] = 1;
+        m[p10] = 1;
+        m[p01] = 1;
+        m[p11] = 1;
+
+        auto r = getAllNeigbors(m, {0, 0}, 0);
+        EXPECT_EQ(r.size(), 2);
+        EXPECT_THAT(
+            r, UnorderedElementsAre(Point{0, -1}, Point{-1, 0}));
+    }
+    {
+        Matrix<int> m{2, 2};
+        m[p00] = 1;
+        m[p10] = 0;
+        m[p01] = 1;
+        m[p11] = 1;
+
+        auto r = getAllNeigbors(m, {0, 0}, 0);
+        EXPECT_EQ(r.size(), 3);
+        EXPECT_THAT(
+            r, UnorderedElementsAre(Point{0, -1}, Point{-1, 0}, Point{1, 0}));
     }
 }
 
@@ -246,19 +291,20 @@ TEST(M5x4, many) {
 }
 
 TEST(Big, xxx) {
-    auto m = generate(9, 9);
+    auto m = generate(13, 13);
     std::cout << " Generated:" << m;
     auto ps = solve(m);
     EXPECT_TRUE(check(ps, m));
 }
 
 TEST(Big, seq) {
-    for (int N = 5; N < 15; ++N) {
+    for (int N = 5; N < 12; ++N) {
         for (int i = 0; i < 10; ++i) {
-            auto m = generate(N, N);
-            std::cout << "N:" << N << "    " << i << " Generated:" << m;
-            auto ps = solve(m);
-            EXPECT_TRUE(check(ps, m));
+            auto m = pair::generate(N, N);
+            std::cerr << "Unmodified matrix:\n" << m.first << "\nProblem:\n"
+                      << m.second << "\n";
+            auto ps = solve(m.second, m.first);
+            EXPECT_TRUE(check(ps, m.second));
         }
     }
 }

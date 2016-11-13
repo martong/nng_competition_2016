@@ -512,12 +512,41 @@ std::istream& operator>>(std::istream& is, Matrix<T>& matrix) {
     return is;
 }
 
+// Return all valid neigbors
 template <typename T>
 std::vector<Point> getNeigbors(const Matrix<T>& m, Point p) {
     std::vector<Point> result = {p + p01, p - p01, p + p10, p - p10};
     result.erase(std::remove_if(result.begin(), result.end(), [&m](auto& p) {
                      return !isInsideMatrix(m, p);
                  }), result.end());
+    return result;
+}
+std::vector<Point> getNeigbors(const Matrix<int>& m, Point p, int with_value) {
+    std::vector<Point> result;
+    auto ns = getNeigbors(m, p);
+    for (const auto& n : ns) {
+        if (m[n] == with_value) {
+            result.push_back(n);
+        }
+    }
+    return result;
+}
+
+// Return all neigbors, those otuside the matrix too
+template <typename T>
+std::vector<Point> getAllNeigbors(const Matrix<T>& m, Point p) {
+    std::vector<Point> result = {p + p01, p - p01, p + p10, p - p10};
+    return result;
+}
+std::vector<Point> getAllNeigbors(const Matrix<int>& m, Point p, int with_value) {
+    std::vector<Point> result;
+    auto ns = getAllNeigbors(m, p);
+    for (const auto& n : ns) {
+        const int def = 0;
+        if (matrixAt(m, n, def) == with_value) {
+            result.push_back(n);
+        }
+    }
     return result;
 }
 
@@ -633,6 +662,7 @@ Matrix<int> build(int m, int n, const std::vector<Point>& ps) {
     return mx;
 }
 
+// <diag, original>
 std::pair<Matrix<int>, Matrix<int>> generate(int m, int n) {
     //std::vector<std::vector<int>> result;
 
@@ -690,12 +720,28 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
         // Cut offs
         for (const auto& n : ns) {
             auto nns = getNeigbors(m, n);
-            auto sum_nns = 0;
-            for (const auto& nn : nns) {
-                sum_nns += m[nn];
+            //auto sum_nns = 0;
+            //for (const auto& nn : nns) {
+                //sum_nns += m[nn];
+            //}
+            //if (sum_nns < m[n] - 1) {
+                //std::cout << "FLOOD ERROR\n";
+                //return false;
+            //}
+
+            // elszigetelt 2-es vagy annal nagyobb
+            if (m[n] >= 2 && nns.size() == 0) {
+                std::cout << "FLOOD ERROR\n";
+                return false;
             }
-            if (sum_nns < m[n] - 1) {
-                //std::cout << "CUT1\n";
+            // - 3-as vagy 4-es aminek 1 szomszedja van.
+            if (m[n] >= 3 && nns.size() == 1) {
+                std::cout << "FLOOD ERROR\n";
+                return false;
+            }
+            // - 4-es aminek 2 szomszedja van.
+            if (m[n] >= 4 && nns.size() == 2) {
+                std::cout << "FLOOD ERROR\n";
                 return false;
             }
         }
@@ -764,7 +810,9 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
     return true;
 }
 
-std::vector<Point> solve(Matrix<int> m) {
+std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) {
+    if (diag.size()) std::cout << "DIAG:\n" << diag;
+
     std::vector<Point> st;
     std::vector<Point> path;
     std::vector<Point> result;
@@ -794,16 +842,105 @@ std::vector<Point> solve(Matrix<int> m) {
         flood(st, m, path);
     };
     flood_ones_from_edges();
-    //std::cout << m;
+    std::cout << m;
 
-    // get the remaining ones from the middle
-    st.clear();
-    for (int i = 1; i < m.width() - 1; ++i) {
-        for (int j = 1; j < m.height() - 1; ++j) {
-            Point p{j, i};
-            if (m[p] == 1) st.push_back(p);
+    auto get_1s_next_2s_at_edges = [&m]() {
+        std::vector<Point> st;
+        for (int i = 0; i < m.width(); ++i) {
+            for (int j = 0; j < m.height(); ++j) {
+
+                Point p{j, i};
+
+                if (m[p] == 2) {
+                    if (getAllNeigbors(m, p, 0).size() == 3) {
+                        auto n1 = getAllNeigbors(m, p, 1);
+                        if (n1.size() == 1) {
+                            st.push_back(n1[0]);
+                        }
+                    }
+                }
+
+            }
         }
+        return st;
+    };
+
+    auto get_1s_next_3s_at_edges = [&m]() {
+        std::vector<Point> st;
+        for (int i = 0; i < m.width(); ++i) {
+            for (int j = 0; j < m.height(); ++j) {
+
+                Point p{j, i};
+
+                if (m[p] == 3) {
+                    if (getAllNeigbors(m, p, 0).size() == 2) {
+                        auto n1 = getAllNeigbors(m, p, 1);
+                        if (n1.size() == 2) {
+                            st.push_back(n1[0]);
+                            st.push_back(n1[1]);
+                        }
+                    }
+                }
+
+            }
+        }
+        return st;
+    };
+
+    auto get_1s_next_elements_at_edges = [&m]() {
+        std::vector<Point> st;
+        for (int i = 0; i < m.width(); ++i) {
+            for (int j = 0; j < m.height(); ++j) {
+
+                Point p{j, i};
+
+                if (5 - m[p] == getAllNeigbors(m, p, 0).size()) {
+                    auto ns1 = getAllNeigbors(m, p, 1);
+                    // TODO optimize:
+                    st = concat(st, ns1);
+                }
+
+            }
+        }
+        return st;
+    };
+
+    auto check_if_really_1 = [&](const auto& st){
+        for (const auto& p : st) {
+            if (diag.size() && diag[p] == 5) {
+                std::cout << "ERROR1vs5 at " << p << std::endl;
+                assert(false);
+            }
+        }
+    };
+
+    //st = get_1s_next_2s_at_edges();
+    //std::cout << "get_1s_next_2s_at_edges: " << st << std::endl;
+    //check_if_really_1(st);
+
+    while (m.size() != path.size()) {
+
+        st = get_1s_next_elements_at_edges();
+        std::cout << "get_1s_next_elements_at_edges: " << st << std::endl;
+        check_if_really_1(st);
+
+        assert(st.size() > 0);
+        flood(st, m, path);
+        //result = concat(result, path);
+
+        std::cout << m;
     }
+
+
+
+    //get the remaining ones from the middle
+    //st.clear();
+    //for (int i = 1; i < m.width() - 1; ++i) {
+        //for (int j = 1; j < m.height() - 1; ++j) {
+            //Point p{j, i};
+            //if (m[p] == 1) st.push_back(p);
+        //}
+    //}
 
     //st.clear();
     // get all ones
@@ -814,10 +951,13 @@ std::vector<Point> solve(Matrix<int> m) {
         //}
     //}
 
-    solve_exp_flood_first(st, m, path, result);
+    //solve_exp_flood_first(st, m, path, result);
 
-    std::reverse(result.begin(), result.end());
-    return result;
+    std::reverse(path.begin(), path.end());
+    return path;
+
+    //std::reverse(result.begin(), result.end());
+    //return result;
 }
 
 void CalculateBuildOrder(const std::vector<std::vector<int>>& buildings, std::vector<std::pair<size_t, size_t>>& solution) {
