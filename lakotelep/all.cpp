@@ -742,29 +742,6 @@ std::vector<Point> concat(const std::vector<Point>& v1,
     return result;
 }
 
-// not used, flood first looks better
-bool solve_exp_flood_last(std::vector<Point> S, Matrix<int> m,
-                          std::vector<Point> path, std::vector<Point>& result) {
-    // std::cout << S;
-    // std::cout << m;
-    if (path.size() == m.size()) {
-        result = path;
-        return true;
-    }
-    if (S.empty()) return false;
-    auto p = S.back();
-    S.pop_back();
-
-    if (!solve_exp_flood_last(S, m, path, result)) {
-        std::vector<Point> floodpath;
-        if (flood({p}, m, floodpath)) {
-            return solve_exp_flood_last(S, m, concat(path, floodpath), result);
-        }
-    }
-    return false;
-}
-
-
 void printDepth(int depth) {
     for (int i = 0; i < depth; ++i) {
         std::cerr << " ";
@@ -820,71 +797,6 @@ std::vector<Point> get_1s_inside(const Matrix<int>& m) {
 }
 
 int numFalsePaths = 0;
-
-bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
-                           size_t size,
-                           std::vector<Point> path,
-                           std::vector<Point>& result) {
-
-    auto flooood = [size](Matrix<int>&m, std::vector<Point>& path){
-        while (size != path.size()) {
-
-            auto st = get_1s_inside(m);
-            // check_if_really_1(diag, st);
-
-            if (st.size() == 0) {
-                break;
-            }
-
-            if (!flood(st, m, path)) {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    auto allFlood = [flooood](std::vector<Point> st, Matrix<int>&m, std::vector<Point>& path) {
-        return flood(st, m, path) && flooood(m, path);
-    };
-
-    if (path.size() == size) {
-        result = path;
-        return true;
-    }
-    if (S.empty()) return false;
-
-    auto p = S.back();
-    S.pop_back();
-
-
-    std::vector<Point> floodpath;
-
-    if (!allFlood({p}, m, floodpath)) {
-        doBuild(m, floodpath.rbegin(), floodpath.rend());
-        ++numFalsePaths;
-        return solve_exp_flood_first(S, m, size, path, result);
-    }
-    if (!solve_exp_flood_first(S, m, size, concat(path, floodpath), result)) {
-        doBuild(m, floodpath.rbegin(), floodpath.rend());
-        ++numFalsePaths;
-        return solve_exp_flood_first(S, m, size, path, result);
-    }
-    return true;
-}
-
-bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m, size_t size,
-                           std::vector<Point>& path) {
-    return solve_exp_flood_first(S, m, size, path, path);
-}
-
-void check_if_really_1 (const Matrix<int>& diag, const std::vector<Point>& st){
-    for (const auto& p : st) {
-        if (diag.size() && diag[p] == 5) {
-            std::cout << "ERROR1vs5 at " << p << std::endl;
-            assert(false);
-        }
-    }
-}
 
 void get_group_impl(const Matrix<int>& m, Point p, int value,
                Matrix<bool>& marked,
@@ -1006,6 +918,110 @@ std::vector<RankedPoints> gather_groups(const Matrix<int>& m) {
     return result;
 }
 
+bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
+                           size_t size,
+                           std::vector<Point> path,
+                           std::vector<Point>& result);
+
+bool solve_all_islands(const Matrix<int>& m, size_t size,
+                       std::vector<Point> path, std::vector<Point>& result) {
+
+    std::cerr << "solve all islands with:\n" << m;
+    bool summa_res = true;
+
+    auto islands = gather_islands(m);
+
+    std::cout << "number of islands: " << islands.size() << "\n";
+    for (auto& island : islands) {
+        std::cerr << "Island:\n" << island.m;
+    }
+    for (auto& island : islands) {
+        // printDepth(depth);
+        std::cerr << "start solving island:\n" << island.m;
+        auto groups = gather_groups(island.m);
+        std::sort(groups.begin(), groups.end(),
+                  [](const auto& l, const auto& r) { return l.rank < r.rank; });
+        auto st = to_vector(groups);
+        std::vector<Point> island_path;
+        auto res = solve_exp_flood_first(st, island.m, island.size, island_path,
+                                         island_path);
+        summa_res = summa_res && res;
+        path = concat(path, island_path);
+        // std::cerr << "solution:\n" << island_path;
+    }
+    result = path;
+    return summa_res;
+}
+
+bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
+                           size_t size,
+                           std::vector<Point> path,
+                           std::vector<Point>& result) {
+
+    std::cerr << S << m;
+
+    auto flooood = [size](Matrix<int>&m, std::vector<Point>& path){
+        while (size != path.size()) {
+
+            auto st = get_1s_inside(m);
+            // check_if_really_1(diag, st);
+
+            if (st.size() == 0) {
+                break;
+            }
+
+            if (!flood(st, m, path)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    auto allFlood = [flooood](std::vector<Point> st, Matrix<int>&m, std::vector<Point>& path) {
+        return flood(st, m, path) && flooood(m, path);
+    };
+
+    auto action = [allFlood](std::vector<Point> st, size_t size, Matrix<int>& m,
+                                   std::vector<Point>& path) {
+        auto r1 = allFlood(st, m, path);
+        auto r2 = solve_all_islands(m, size, path, path);
+        return r1 && r2;
+    };
+
+    if (path.size() == size) {
+        result = path;
+        return true;
+    }
+    if (S.empty()) return false;
+
+    auto p = S.back();
+    S.pop_back();
+
+
+    std::vector<Point> floodpath;
+
+    if (!action({p}, size, m, floodpath)) {
+        doBuild(m, floodpath.rbegin(), floodpath.rend());
+        ++numFalsePaths;
+        return solve_exp_flood_first(S, m, size, path, result);
+    }
+    if (!solve_exp_flood_first(S, m, size, concat(path, floodpath), result)) {
+        doBuild(m, floodpath.rbegin(), floodpath.rend());
+        ++numFalsePaths;
+        return solve_exp_flood_first(S, m, size, path, result);
+    }
+    return true;
+}
+
+void check_if_really_1 (const Matrix<int>& diag, const std::vector<Point>& st){
+    for (const auto& p : st) {
+        if (diag.size() && diag[p] == 5) {
+            std::cout << "ERROR1vs5 at " << p << std::endl;
+            assert(false);
+        }
+    }
+}
+
 std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) {
     if (diag.size()) std::cout << "DIAG:\n" << diag;
 
@@ -1039,6 +1055,7 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
     };
     flood_ones_from_edges();
 
+    //solve_exp_flood_first({}, m, m.size(), path, path);
     while (m.size() != path.size()) {
 
         auto st = get_1s_inside(m);
@@ -1057,16 +1074,18 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
 
         auto islands = gather_islands(m);
 
-        for (const auto& island : islands) {
-            //std::cerr << "Island:\n" << island.m;
+        for (auto& island : islands) {
+            // std::cerr << "Island:\n" << island.m;
             auto groups = gather_groups(island.m);
-            std::sort(groups.begin(), groups.end(),
-                      [](const auto& l, const auto& r) { return l.rank < r.rank; });
+            std::sort(
+                groups.begin(), groups.end(),
+                [](const auto& l, const auto& r) { return l.rank < r.rank; });
             auto st = to_vector(groups);
             std::vector<Point> island_path;
-            auto res = solve_exp_flood_first(st, island.m, island.size, island_path);
+            auto res = solve_exp_flood_first(st, island.m, island.size,
+                                             island_path, island_path);
             path = concat(path, island_path);
-            //std::cerr << "solution:\n" << island_path;
+            // std::cerr << "solution:\n" << island_path;
         }
 
         //std::cerr << "BEFORE SEARCH\n";
