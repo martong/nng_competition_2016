@@ -923,34 +923,58 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
                            std::vector<Point> path,
                            std::vector<Point>& result);
 
-bool solve_all_islands(const Matrix<int>& m, size_t size,
+bool solve_all_islands(Matrix<int>& m, size_t size,
                        std::vector<Point> path, std::vector<Point>& result) {
 
-    std::cerr << "solve all islands with:\n" << m;
-    bool summa_res = true;
+    //std::cerr << "solve all islands with:\n" << m;
 
-    auto islands = gather_islands(m);
+    //if (islands.size() >= 2) {
+        //std::cerr << "desired: " << size << "\n";
+        //std::cerr << "at least two islands, path size: " << path.size() << "\n";
+        //int count = 0;
+        //for (int i = 0; i < m.width(); ++i)
+            //for (int j = 0; j < m.height(); ++j) if (m[{i,j}] == 0) ++count;
+        //std::cerr << "at least two islands, number of 0s: " << count << "\n";
+    //}
 
-    std::cout << "number of islands: " << islands.size() << "\n";
-    for (auto& island : islands) {
-        std::cerr << "Island:\n" << island.m;
+    //if (size < (m.width() * m.height()) / 5) {
+    if (true) {
+        bool summa_res = true;
+
+        auto islands = gather_islands(m);
+        for (auto& island : islands) {
+            //std::cerr << "start solving island:\n" << island.m;
+            auto groups = gather_groups(island.m);
+            std::sort(
+                groups.begin(), groups.end(),
+                [](const auto& l, const auto& r) { return l.rank < r.rank; });
+            auto st = to_vector(groups);
+            std::vector<Point> island_path;
+            auto res = solve_exp_flood_first(st, island.m, island.size,
+                                             island_path, island_path);
+            summa_res = summa_res && res;
+            path = concat(path, island_path);
+        }
+        result = path;
+        return summa_res;
+
+    // Not worth to cut the island stuff
+    } else {
+            auto groups = gather_groups(m);
+            std::sort(
+                groups.begin(), groups.end(),
+                [](const auto& l, const auto& r) { return l.rank < r.rank; });
+            auto st = to_vector(groups);
+            std::vector<Point> island_path;
+
+            // Sould get the number of nonzeros inside to make it work, not better
+            //for (int i = 0; i < m.width(); ++i)
+                //for (int j = 0; j < m.height(); ++j) if (m[{i,j}] == 0) ++count;
+            auto res = solve_exp_flood_first(st, m, size,
+                                             island_path, island_path);
+            result = concat(path, island_path);
+            return res;
     }
-    for (auto& island : islands) {
-        // printDepth(depth);
-        std::cerr << "start solving island:\n" << island.m;
-        auto groups = gather_groups(island.m);
-        std::sort(groups.begin(), groups.end(),
-                  [](const auto& l, const auto& r) { return l.rank < r.rank; });
-        auto st = to_vector(groups);
-        std::vector<Point> island_path;
-        auto res = solve_exp_flood_first(st, island.m, island.size, island_path,
-                                         island_path);
-        summa_res = summa_res && res;
-        path = concat(path, island_path);
-        // std::cerr << "solution:\n" << island_path;
-    }
-    result = path;
-    return summa_res;
 }
 
 bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
@@ -958,7 +982,7 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
                            std::vector<Point> path,
                            std::vector<Point>& result) {
 
-    std::cerr << S << m;
+    //std::cerr << S << m;
 
     auto flooood = [size](Matrix<int>&m, std::vector<Point>& path){
         while (size != path.size()) {
@@ -981,11 +1005,10 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
         return flood(st, m, path) && flooood(m, path);
     };
 
-    auto action = [allFlood](std::vector<Point> st, size_t size, Matrix<int>& m,
-                                   std::vector<Point>& path) {
-        auto r1 = allFlood(st, m, path);
-        auto r2 = solve_all_islands(m, size, path, path);
-        return r1 && r2;
+    auto action = [allFlood](std::vector<Point> st, size_t size,
+                                    Matrix<int>& m, std::vector<Point>& path) {
+        return allFlood(st, m, path) &&
+               solve_all_islands(m, size, path, path);
     };
 
     if (path.size() == size) {
@@ -1055,7 +1078,6 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
     };
     flood_ones_from_edges();
 
-    //solve_exp_flood_first({}, m, m.size(), path, path);
     while (m.size() != path.size()) {
 
         auto st = get_1s_inside(m);
