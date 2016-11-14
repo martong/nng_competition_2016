@@ -859,7 +859,7 @@ std::vector<Point> get_1s_inside(const Matrix<int>& m) {
     return result;
 }
 
-bool solve_exp_flood_first(std::vector<Point> S, Matrix<int> m,
+bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
                            size_t size,
                            std::vector<Point> path,
                            std::vector<Point>& result) {
