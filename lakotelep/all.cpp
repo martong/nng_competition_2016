@@ -512,63 +512,9 @@ std::istream& operator>>(std::istream& is, Matrix<T>& matrix) {
     return is;
 }
 
-// Return all valid neigbors
-template <typename T>
-std::vector<Point> getNeigbors(const Matrix<T>& m, Point p) {
-    std::vector<Point> result = {p + p01, p - p01, p + p10, p - p10};
-    result.erase(std::remove_if(result.begin(), result.end(), [&m](auto& p) {
-                     return !isInsideMatrix(m, p);
-                 }), result.end());
-    return result;
-}
-std::vector<Point> getNeigbors(const Matrix<int>& m, Point p, int with_value) {
-    std::vector<Point> result;
-    auto ns = getNeigbors(m, p);
-    for (const auto& n : ns) {
-        if (m[n] == with_value) {
-            result.push_back(n);
-        }
-    }
-    return result;
-}
-std::vector<Point> getNeigbors_not(const Matrix<int>& m, Point p, int without_value) {
-    std::vector<Point> result;
-    auto ns = getNeigbors(m, p);
-    for (const auto& n : ns) {
-        if (m[n] != without_value) {
-            result.push_back(n);
-        }
-    }
-    return result;
-}
-
 // Return all neigbors, those otuside the matrix too
-template <typename T>
-std::vector<Point> getAllNeigbors(const Matrix<T>& m, Point p) {
-    std::vector<Point> result = {p + p01, p - p01, p + p10, p - p10};
-    return result;
-}
-std::vector<Point> getAllNeigbors(const Matrix<int>& m, Point p, int with_value) {
-    std::vector<Point> result;
-    auto ns = getAllNeigbors(m, p);
-    for (const auto& n : ns) {
-        const int def = 0;
-        if (matrixAt(m, n, def) == with_value) {
-            result.push_back(n);
-        }
-    }
-    return result;
-}
-std::vector<Point> getAllNeigbors_not(const Matrix<int>& m, Point p, int without_value) {
-    std::vector<Point> result;
-    auto ns = getAllNeigbors(m, p);
-    for (const auto& n : ns) {
-        const int def = 0;
-        if (matrixAt(m, n, def) != without_value) {
-            result.push_back(n);
-        }
-    }
-    return result;
+std::array<Point, 4> getAllNeigbors(Point p) {
+    return {{p + p01, p - p01, p + p10, p - p10}};
 }
 
 std::ostream& operator<<(std::ostream& os, const std::vector<Point>& ps) {
@@ -640,11 +586,12 @@ void doBuild(Matrix<int>& mx, Iterator begin, Iterator end) {
         auto p = *begin;
         mx[p] = 1;
 
-        auto ns = getNeigbors(mx, p);
-        for (const auto n : ns) {
-            auto& v = mx[n];
-            if (v >= 1) ++v;
-            if (v > 4) v = 1;
+        for (const auto n : getAllNeigbors(p)) {
+            if (isInsideMatrix(mx, n)) {
+                auto& v = mx[n];
+                if (v >= 1) ++v;
+                if (v > 4) v = 1;
+            }
         }
     }
 }
@@ -679,11 +626,11 @@ Matrix<int> build(int m, int n, const std::vector<Point>& ps) {
     for (const auto p : ps) {
         mx[p] = 1;
 
-        auto ns = getNeigbors(mx, p);
-        for (const auto n : ns) {
-            auto& v = mx[n];
-            if (v >= 1) ++v;
-            //if (v > 4) v = 1;
+        for (const auto n : getAllNeigbors(p)) {
+            if (isInsideMatrix(mx, n)) {
+                auto& v = mx[n];
+                if (v >= 1) ++v;
+            }
         }
     }
     return mx;
@@ -734,19 +681,27 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
 
         m[p] = 0;
         path.push_back(p);
-        auto ns = getNeigbors(m, p);
+        auto ns = getAllNeigbors(p);
         for (const auto& n : ns) {
-            --m[n];
-            if (m[n] == 0) {
-                m[n] = 4;
+            if (isInsideMatrix(m, n)) {
+                --m[n];
+                if (m[n] == 0) {
+                    m[n] = 4;
+                }
+                if (m[n] < 0) m[n] = 0;
+                if (m[n] == 1) nst.push_back(n);
             }
-            if (m[n] < 0) m[n] = 0;
-            if (m[n] == 1) nst.push_back(n);
         }
 
         // Cut offs
         for (const auto& n : ns) {
-            auto nns = getNeigbors(m, n);
+            if (!isInsideMatrix(m, n)) {
+                continue;
+            }
+
+            auto nns = getAllNeigbors(n);
+            std::size_t nsize = std::count_if(nns.begin(), nns.end(),
+                    [&](Point p) { return isInsideMatrix(m, p); });
             //auto sum_nns = 0;
             //for (const auto& nn : nns) {
                 //sum_nns += m[nn];
@@ -757,17 +712,17 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
             //}
 
             // elszigetelt 2-es vagy annal nagyobb
-            if (m[n] >= 2 && nns.size() == 0) {
+            if (m[n] >= 2 && nsize == 0) {
                 std::cout << "FLOOD ERROR\n";
                 return false;
             }
             // - 3-as vagy 4-es aminek 1 szomszedja van.
-            if (m[n] >= 3 && nns.size() == 1) {
+            if (m[n] >= 3 && nsize == 1) {
                 std::cout << "FLOOD ERROR\n";
                 return false;
             }
             // - 4-es aminek 2 szomszedja van.
-            if (m[n] >= 4 && nns.size() == 2) {
+            if (m[n] >= 4 && nsize == 2) {
                 std::cout << "FLOOD ERROR\n";
                 return false;
             }
@@ -825,8 +780,7 @@ void get_1s_inside_loop(const Matrix<int>& m, const Point p,
                         int depth*/) {
     H.push_back(p);
     auto sum0s = 0;
-    auto neigbours = getAllNeigbors(m, p);
-    for (auto x : neigbours) {
+    for (auto x : getAllNeigbors(p)) {
         if (matrixAt(m, x, 0) == 0 ||
             std::find(H.begin(), H.end(), x) != H.end()) {
             ++sum0s;
@@ -837,9 +791,9 @@ void get_1s_inside_loop(const Matrix<int>& m, const Point p,
     }
     //printDepth(depth);
     //std::cerr << "Considering: " << p << " [" << m[p] << "]. " << "sum=" << sum0s << "\n";
-    auto ns = getNeigbors(m, p);
-    for (auto n : ns) {
-        if (m[n] == 0 || std::find(H.begin(), H.end(), n) != H.end()) {
+    for (auto n : getAllNeigbors(p)) {
+        if (!isInsideMatrix(m, n) || m[n] == 0 ||
+                std::find(H.begin(), H.end(), n) != H.end()) {
             continue;
         }
 
@@ -937,8 +891,10 @@ void get_group_impl(const Matrix<int>& m, Point p, int value,
                std::vector<Point>& result) {
     marked[p] = true;
     result.push_back(p);
-    for (auto n : getNeigbors(m, p, value)) {
-        if(!marked[n]) get_group_impl(m, n, value, marked, result);
+    for (auto n : getAllNeigbors(p)) {
+        if(isInsideMatrix(m, n) && !marked[n] && m[n] == value) {
+            get_group_impl(m, n, value, marked, result);
+        }
     }
 }
 
@@ -969,8 +925,10 @@ void get_island_impl(const Matrix<int>& m, Point p,
     max.x = std::max(max.x, p.x);
     max.y = std::max(max.y, p.y);
     result.push_back(p);
-    for (auto n : getNeigbors_not(m, p, 0)) {
-        if(!marked[n]) get_island_impl(m, n, marked, min, max, result);
+    for (auto n : getAllNeigbors(p)) {
+        if(isInsideMatrix(m, n) && !marked[n] && m[n] != 0) {
+            get_island_impl(m, n, marked, min, max, result);
+        }
     }
 }
 // Returns a group, the groups first two elements are neigbors.
