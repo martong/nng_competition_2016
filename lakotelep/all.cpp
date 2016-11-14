@@ -634,9 +634,10 @@ Finally<Function> finally(const Function& function)
 #include <random>
 #include <vector>
 
-Matrix<int> build(int m, int n, const std::vector<Point>& ps) {
-    Matrix<int> mx(m, n);
-    for (const auto p : ps) {
+template<typename Iterator>
+void doBuild(Matrix<int>& mx, Iterator begin, Iterator end) {
+    for (;begin != end; ++begin) {
+        auto p = *begin;
         mx[p] = 1;
 
         auto ns = getNeigbors(mx, p);
@@ -646,6 +647,11 @@ Matrix<int> build(int m, int n, const std::vector<Point>& ps) {
             if (v > 4) v = 1;
         }
     }
+}
+
+Matrix<int> build(int m, int n, const std::vector<Point>& ps) {
+    Matrix<int> mx(m, n);
+    doBuild(mx, ps.begin(), ps.end());
     return mx;
 }
 
@@ -859,6 +865,8 @@ std::vector<Point> get_1s_inside(const Matrix<int>& m) {
     return result;
 }
 
+int numFalsePaths = 0;
+
 bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
                            size_t size,
                            std::vector<Point> path,
@@ -894,15 +902,18 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
     auto p = S.back();
     S.pop_back();
 
-    auto mc = m;
 
     std::vector<Point> floodpath;
 
     if (!allFlood({p}, m, floodpath)) {
-        return solve_exp_flood_first(S, mc, size, path, result);
+        doBuild(m, floodpath.rbegin(), floodpath.rend());
+        ++numFalsePaths;
+        return solve_exp_flood_first(S, m, size, path, result);
     }
     if (!solve_exp_flood_first(S, m, size, concat(path, floodpath), result)) {
-        return solve_exp_flood_first(S, mc, size, path, result);
+        doBuild(m, floodpath.rbegin(), floodpath.rend());
+        ++numFalsePaths;
+        return solve_exp_flood_first(S, m, size, path, result);
     }
     return true;
 }
@@ -1106,6 +1117,7 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
         //std::cerr << "solve returns: " << res << "\n";
     }
 
+    std::cerr << "False paths: " << numFalsePaths << "\n";
     std::reverse(path.begin(), path.end());
     return path;
 }
