@@ -670,6 +670,7 @@ bool check(const std::vector<Point>& ps, const Matrix<int>& expected) {
 //==============================================================================
 // SOLUTION COMES FROM HERE
 
+int floodErrors = 0;
 
 bool flood(std::vector<Point> st, Matrix<int>& m,
                 std::vector<Point>& path) {
@@ -713,17 +714,17 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
 
             // elszigetelt 2-es vagy annal nagyobb
             if (m[n] >= 2 && nsize == 0) {
-                std::cout << "FLOOD ERROR\n";
+                ++floodErrors;
                 return false;
             }
             // - 3-as vagy 4-es aminek 1 szomszedja van.
             if (m[n] >= 3 && nsize == 1) {
-                std::cout << "FLOOD ERROR\n";
+                ++floodErrors;
                 return false;
             }
             // - 4-es aminek 2 szomszedja van.
             if (m[n] >= 4 && nsize == 2) {
-                std::cout << "FLOOD ERROR\n";
+                ++floodErrors;
                 return false;
             }
         }
@@ -752,7 +753,7 @@ int solve_exp_called = 0;
 
 
 
-void get_1s_inside_loop(const Matrix<int>& m, const Point p,
+bool get_1s_inside_loop(const Matrix<int>& m, const Point p,
                         std::vector<Point> H, std::vector<Point>& result/*,
                         int depth*/) {
     H.push_back(p);
@@ -763,8 +764,11 @@ void get_1s_inside_loop(const Matrix<int>& m, const Point p,
             ++sum0s;
         }
     }
-    if (sum0s != 5 - m[p]) {
-        return;
+    if (sum0s > 5 - m[p]) {
+        return false;
+    }
+    if (sum0s < 5 - m[p]) {
+        return true;
     }
     //printDepth(depth);
     //std::cerr << "Considering: " << p << " [" << m[p] << "]. " << "sum=" << sum0s << "\n";
@@ -779,18 +783,26 @@ void get_1s_inside_loop(const Matrix<int>& m, const Point p,
             //std::cerr << "Adding: " << n << "\n";
             result.push_back(n);
         } else {
-            get_1s_inside_loop(m, n, H, result/*, depth + 1*/);
+            if (!get_1s_inside_loop(m, n, H, result/*, depth + 1*/)) {
+                return false;
+            }
         }
     }
+    return true;
 };
 
-std::vector<Point> get_1s_inside(const Matrix<int>& m) {
+int get1sErrors = 0;
+
+boost::optional<std::vector<Point>> get_1s_inside(const Matrix<int>& m) {
     std::vector<Point> result;
     for (int i = 0; i < m.height(); ++i) {
         for (int j = 0; j < m.width(); ++j) {
             std::vector<Point> H;
             Point p{j, i};
-            get_1s_inside_loop(m, p, H, result/*, 0*/);
+            if (!get_1s_inside_loop(m, p, H, result/*, 0*/)) {
+                ++get1sErrors;
+                return boost::none;
+            }
         }
     }
     return result;
@@ -990,11 +1002,14 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
             auto st = get_1s_inside(m);
             // check_if_really_1(diag, st);
 
-            if (st.size() == 0) {
+            if (!st) {
+                return false;
+            }
+            if (st->size() == 0) {
                 break;
             }
 
-            if (!flood(st, m, path)) {
+            if (!flood(*st, m, path)) {
                 return false;
             }
         }
@@ -1081,15 +1096,16 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
     while (m.size() != path.size()) {
 
         auto st = get_1s_inside(m);
+        assert(st);
         // check_if_really_1(diag, st);
 
-        if (st.size() == 0) {
+        if (st->size() == 0) {
             //std::cerr << "FLOOD STOPPED:\n";
             //std::cerr << m;
             break;
         }
 
-        flood(st, m, path);
+        flood(*st, m, path);
     }
 
     if (m.size() != path.size()) {
@@ -1117,6 +1133,8 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
     }
 
     std::cerr << "False paths: " << numFalsePaths << "\n";
+    std::cerr << "Flood errors: " << floodErrors << "\n";
+    std::cerr << "flooood errors: " << get1sErrors << "\n";
     std::reverse(path.begin(), path.end());
     return path;
 }
