@@ -1,6 +1,6 @@
 #include <vector>
 #include <iostream>
-#include "worst_case.hpp"
+#include "solution.hpp"
 
 using V = std::vector<size_t>;
 
