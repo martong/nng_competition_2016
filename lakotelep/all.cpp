@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <cassert>
 
+#include <boost/optional.hpp>
+
 // Direction.hpp
 #include <iosfwd>
 
@@ -670,7 +672,6 @@ bool check(const std::vector<Point>& ps, const Matrix<int>& expected) {
 //==============================================================================
 // SOLUTION COMES FROM HERE
 
-int floodErrors = 0;
 
 bool flood(std::vector<Point> st, Matrix<int>& m,
                 std::vector<Point>& path) {
@@ -714,17 +715,14 @@ bool flood(std::vector<Point> st, Matrix<int>& m,
 
             // elszigetelt 2-es vagy annal nagyobb
             if (m[n] >= 2 && nsize == 0) {
-                ++floodErrors;
                 return false;
             }
             // - 3-as vagy 4-es aminek 1 szomszedja van.
             if (m[n] >= 3 && nsize == 1) {
-                ++floodErrors;
                 return false;
             }
             // - 4-es aminek 2 szomszedja van.
             if (m[n] >= 4 && nsize == 2) {
-                ++floodErrors;
                 return false;
             }
         }
@@ -791,7 +789,6 @@ bool get_1s_inside_loop(const Matrix<int>& m, const Point p,
     return true;
 };
 
-int get1sErrors = 0;
 
 boost::optional<std::vector<Point>> get_1s_inside(const Matrix<int>& m) {
     std::vector<Point> result;
@@ -800,7 +797,6 @@ boost::optional<std::vector<Point>> get_1s_inside(const Matrix<int>& m) {
             std::vector<Point> H;
             Point p{j, i};
             if (!get_1s_inside_loop(m, p, H, result/*, 0*/)) {
-                ++get1sErrors;
                 return boost::none;
             }
         }
@@ -808,7 +804,6 @@ boost::optional<std::vector<Point>> get_1s_inside(const Matrix<int>& m) {
     return result;
 }
 
-int numFalsePaths = 0;
 
 void get_group_impl(const Matrix<int>& m, Point p, int value,
                Matrix<bool>& marked,
@@ -1040,12 +1035,10 @@ bool solve_exp_flood_first(std::vector<Point> S, Matrix<int>& m,
 
     if (!action({p}, size, m, floodpath)) {
         doBuild(m, floodpath.rbegin(), floodpath.rend());
-        ++numFalsePaths;
         return solve_exp_flood_first(S, m, size, path, result);
     }
     if (!solve_exp_flood_first(S, m, size, concat(path, floodpath), result)) {
         doBuild(m, floodpath.rbegin(), floodpath.rend());
-        ++numFalsePaths;
         return solve_exp_flood_first(S, m, size, path, result);
     }
     return true;
@@ -1132,9 +1125,6 @@ std::vector<Point> solve(Matrix<int> m, const Matrix<int> diag = Matrix<int>{}) 
         //std::cerr << "solve returns: " << res << "\n";
     }
 
-    std::cerr << "False paths: " << numFalsePaths << "\n";
-    std::cerr << "Flood errors: " << floodErrors << "\n";
-    std::cerr << "flooood errors: " << get1sErrors << "\n";
     std::reverse(path.begin(), path.end());
     return path;
 }
